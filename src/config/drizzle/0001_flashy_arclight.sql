@@ -1,0 +1,1 @@
+ALTER TABLE "passenger" RENAME COLUMN "password_hash" TO "password";
