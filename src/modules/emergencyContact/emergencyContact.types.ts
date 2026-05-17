@@ -5,8 +5,6 @@ export interface EmergencyContact {
     maternalSurname: string;
     phone: string;
     email: string;
-    createdAt: string;
-    updatedAt: string;
 }
 
 export interface EmergencyContactDto {

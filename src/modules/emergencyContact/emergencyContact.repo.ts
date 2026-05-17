@@ -2,18 +2,14 @@ import type { Pool } from "pg";
 import type { EmergencyContact, EmergencyContactDto, IEmergencyContactRepository } from "./emergencyContact.types.js";
 import { generateUUID } from "../../utils/uuid.js";
 
-interface EmergencyContactRow {
+export interface EmergencyContactRow {
     id: string;
     name: string;
     paternalSurname: string;
     maternalSurname: string;
     phone: string;
     email: string;
-    createdAt: string;
-    updatedAt: string;
 }
-
-
 
 export class EmergencyContactRepository implements IEmergencyContactRepository {
     constructor(
@@ -41,8 +37,6 @@ export class EmergencyContactRepository implements IEmergencyContactRepository {
             maternalSurname: row.maternalSurname,
             email: row.email,
             phone: row.phone,
-            createdAt: row.createdAt,
-            updatedAt: row.updatedAt,
         }
     }
 
@@ -73,8 +67,6 @@ export class EmergencyContactRepository implements IEmergencyContactRepository {
             maternalSurname: row.maternalSurname,
             email: row.email,
             phone: row.phone,
-            createdAt: row.createdAt,
-            updatedAt: row.updatedAt,
         }
     }
 
@@ -105,8 +97,6 @@ export class EmergencyContactRepository implements IEmergencyContactRepository {
             maternalSurname: row.maternalSurname,
             email: row.email,
             phone: row.phone,
-            createdAt: row.createdAt,
-            updatedAt: row.updatedAt,
         }
     }
 
@@ -138,8 +128,6 @@ export class EmergencyContactRepository implements IEmergencyContactRepository {
             maternalSurname: row.maternalSurname,
             email: row.email,
             phone: row.phone,
-            createdAt: row.createdAt,
-            updatedAt: row.updatedAt,
         }
     }
 
@@ -164,8 +152,6 @@ export class EmergencyContactRepository implements IEmergencyContactRepository {
             maternalSurname: row.maternalSurname,
             email: row.email,
             phone: row.phone,
-            createdAt: row.createdAt,
-            updatedAt: row.updatedAt,
         }
     }
 }

@@ -1,0 +1,1 @@
+ALTER TABLE "passenger" ADD CONSTRAINT "passenger_email_unique" UNIQUE("email");

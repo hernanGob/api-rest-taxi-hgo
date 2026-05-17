@@ -55,12 +55,12 @@ export const municipality = pgTable(
 );
 
 /* ===================== PRICING CONFIG ===================== */
-/* export const pricingConfig = pgTable(
+export const pricingConfig = pgTable(
     "pricing_config",
     {
         id: uuid("id").primaryKey().notNull(),
 
-        scope: pricingScope("scope").notNull(), // GLOBAL | ZONE | MUNICIPALITY
+        scope: text("scope").notNull(), // GLOBAL | ZONE | MUNICIPALITY
 
         // solo se usan dependiendo del scope (pueden ir null)
         zoneId: uuid("zone_id").references(() => zones.id, { onDelete: "cascade" }),
@@ -79,7 +79,7 @@ export const municipality = pgTable(
         index("pricing_municipality_id_idx").on(t.municipalityId),
         index("pricing_active_idx").on(t.isActive),
     ],
-); */
+);
 
 /* ===================== EMERGENCY CONTACT ===================== */
 export const emergencyContact = pgTable(
@@ -108,7 +108,7 @@ export const passenger = pgTable(
         maternalSurname: text("maternal_surname").notNull(),
 
         phone: varchar("phone", { length: 15 }).notNull(),
-        email: text("email").notNull(),
+        email: text("email").notNull().unique(),
 
         password: text("password").notNull(),
 
@@ -162,12 +162,12 @@ export const user = pgTable(
 
         passwordHash: text("password_hash"),
 
-        emailVerified: boolean("email_verified").default(false).notNull(),
+        /* emailVerified: boolean("email_verified").default(false).notNull(),
         codeHash: text("code_hash").default("").notNull(),
         nonce: text("nonce").default("").notNull(),
         expiresAt: timestamp("expires_at", { withTimezone: false }),
 
-        isDeleted: boolean("is_deleted").default(false).notNull(),
+        isDeleted: boolean("is_deleted").default(false).notNull(), */
 
         createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
         updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
@@ -179,37 +179,12 @@ export const user = pgTable(
     (t) => [
         uniqueIndex("user_email_uq").on(t.email),
         index("user_phone_idx").on(t.phone),
-        index("user_deleted_idx").on(t.isDeleted),
+        /* index("user_deleted_idx").on(t.isDeleted), */
     ],
 );
 
-
-
-
-
-
-/* ===================== DRIVERS ===================== */
-/* export const drivers = pgTable(
-    "drivers",
-    {
-        id: uuid("id").primaryKey().notNull(),
-
-        firstName: text("first_name").notNull(),
-        paternalSurname: text("paternal_surname").notNull(),
-        maternalSurname: text("maternal_surname").default(""),
-
-        expirationDate: date('expiration_date').notNull(),
-        profilePicture: text('profile_picture'),
-
-        createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-        updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
-    },
-    (t) => [
-    ],
-); */
-
 /* ===================== SERVICE TYPE ===================== */
-/* export const serviceType = pgTable(
+export const serviceType = pgTable(
     "service_type",
     {
         id: serial("id").primaryKey().notNull(),
@@ -217,20 +192,20 @@ export const user = pgTable(
         increasePercentage: numeric("increase_percentage", { precision: 5, scale: 2 }).notNull(),
     },
     (t) => [uniqueIndex("service_type_name_uq").on(t.name)],
-); */
+);
 
 /* ===================== TRIP STATUS ===================== */
-/* export const tripStatus = pgTable(
+export const tripStatus = pgTable(
     "trip_status",
     {
         id: serial("id").primaryKey().notNull(),
         status: text("status").notNull(),
     },
     (t) => [uniqueIndex("trip_status_status_uq").on(t.status)],
-); */
+);
 
 /* ===================== TRIPS ===================== */
-/* export const trips = pgTable(
+export const trips = pgTable(
     "trips",
     {
         id: uuid("id").primaryKey().notNull(),
@@ -239,7 +214,7 @@ export const user = pgTable(
             .notNull()
             .references(() => passenger.id, { onDelete: "cascade" }),
 
-        driverId: uuid("driver_id").references(() => drivers.id, { onDelete: "set null" }),
+        idOperador:  integer('idoperador'),
 
         origin: jsonb("origin").notNull(),
         destination: jsonb("destination").notNull(),
@@ -280,9 +255,29 @@ export const user = pgTable(
     },
     (t) => [
         index("trips_passenger_id_idx").on(t.passengerId),
-        index("trips_driver_id_idx").on(t.driverId),
         index("trips_status_id_idx").on(t.tripStatusId),
         index("trips_service_type_id_idx").on(t.serviceTypeId),
         index("trips_pricing_config_id_idx").on(t.pricingConfigId),
+    ],
+);
+
+
+/* ===================== DRIVERS ===================== */
+/* export const drivers = pgTable(
+    "drivers",
+    {
+        id: uuid("id").primaryKey().notNull(),
+
+        firstName: text("first_name").notNull(),
+        paternalSurname: text("paternal_surname").notNull(),
+        maternalSurname: text("maternal_surname").default(""),
+
+        expirationDate: date('expiration_date').notNull(),
+        profilePicture: text('profile_picture'),
+
+        createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+        updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+    },
+    (t) => [
     ],
 ); */

@@ -9,6 +9,10 @@ interface Config {
     FRONTEND_URL: string;
     JWT_SECRET: string;
     REDIS_URL: string;
+    API_KEY_GOOGLE: string;
+    API_STCH: string;
+    STCH_USER: string;
+    STCH_PASSWORD: string;
 }
 
 export const config: Config = {
@@ -18,4 +22,8 @@ export const config: Config = {
     FRONTEND_URL: process.env.FRONTEND_URL || '',
     JWT_SECRET: process.env.JWT_SECRET || '',
     REDIS_URL: process.env.REDIS_URL || '',
+    API_KEY_GOOGLE: process.env.API_KEY_GOOGLE || '',
+    API_STCH: process.env.API_STCH || '',
+    STCH_USER: process.env.API_STCH || '',
+    STCH_PASSWORD: process.env.API_STCH || '',
 };

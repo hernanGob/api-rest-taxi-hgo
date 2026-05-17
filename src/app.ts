@@ -11,10 +11,12 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import hpp from 'hpp';
 import compression from 'compression';
+import { buildContainer } from './modules/container.js';
 
 
 export const createApp = () => {
     const app: Application = express();
+    const container = buildContainer();
 
     app.disable('x-powered-by');
 
@@ -82,6 +84,13 @@ export const createApp = () => {
         }
     });
 
+    /* app.use('/api', apiLimiter); */
+
+    app.use('/api/user', container.userRoutes);
+    app.use('/api/passenger', container.passengerRoutes);
+    app.use('/api/pricing', container.pricingRoutes);
+    app.use('/api/geo', container.geoRoutes);
+    app.use('/api/driver', container.driverRoutes);
 
     app.use((_req: Request, res: Response) => {
         return res.status(404).json({
