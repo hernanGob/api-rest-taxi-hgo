@@ -3,9 +3,16 @@ import { UserController } from "./admin/admin.controller.js";
 import { UserRepository } from "./admin/admin.repo.js";
 import { UserRoutes } from "./admin/admin.routes.js";
 import { UserService } from "./admin/admin.service.js";
+import { ConcessionaireController } from "./concessionaire/concessionaire.controller.js";
+import { ConcessionaireRoutes } from "./concessionaire/concessionaire.routes.js";
+import { ConcessionaireService } from "./concessionaire/concessionaire.service.js";
 import { DriverController } from "./driver/driver.controller.js";
 import { DriverRoutes } from "./driver/driver.routes.js";
 import { DriverService } from "./driver/driver.service.js";
+import { DriverAuthController } from "./driverAuth/driverAuth.controller.js";
+import { DriverAuthRepository } from "./driverAuth/driverAuth.repo.js";
+import { DriverAuthRoutes } from "./driverAuth/driverAuth.routes.js";
+import { DriverAuthService } from "./driverAuth/driverAuth.service.js";
 import { GeoController } from "./geo/geo.controller.js";
 import { GeoRepository } from "./geo/geo.repo.js";
 import { GeoRoutes } from "./geo/geo.routes.js";
@@ -18,7 +25,19 @@ import { PricingController } from "./pricing/pricing.controller.js";
 import { PricingRepository } from "./pricing/pricing.repo.js";
 import { PricingRoutes } from "./pricing/pricing.routes.js";
 import { PricingService } from "./pricing/pricing.service.js";
+import { ServiceTypeController } from "./serviceType/serviceType.controller.js";
+import { ServiceTypeRepository } from "./serviceType/serviceType.repo.js";
+import { ServiceTypeRoutes } from "./serviceType/serviceType.routes.js";
+import { ServiceTypeService } from "./serviceType/serviceType.service.js";
 import { StchAuthService } from "./stch/stchAuth.service.js";
+import { TripController } from "./trips/trip.controller.js";
+import { TripRepository } from "./trips/trip.repo.js";
+import { TripRoutes } from "./trips/trip.routes.js";
+import { TripService } from "./trips/trip.service.js";
+import { ZoneController } from "./zone/zone.controller.js";
+import { ZoneRepository } from "./zone/zone.repo.js";
+import { ZoneRoutes } from "./zone/zone.routes.js";
+import { ZoneService } from "./zone/zone.service.js";
 
 export const buildContainer = () => {
     const passengerRepository = new PassengerRepository(pool);
@@ -46,11 +65,46 @@ export const buildContainer = () => {
     const userController = new UserController(userService);
     const userRoutes = UserRoutes(userController);
 
+    const zoneRepository = new ZoneRepository(pool);
+    const zoneService = new ZoneService(zoneRepository);
+    const zoneController = new ZoneController(zoneService);
+    const zoneRoutes = ZoneRoutes(zoneController);
+
+    const driverAuthRepository = new DriverAuthRepository(pool);
+    const driverAuthService = new DriverAuthService(
+        driverAuthRepository,
+        driverService
+    );
+    const driverAuthController = new DriverAuthController(driverAuthService);
+    const driverAuthRoutes = DriverAuthRoutes(driverAuthController);
+
+
+    const concessionaireService = new ConcessionaireService(stchAuthService);
+    const concessionaireController = new ConcessionaireController(
+        concessionaireService
+    );
+    const concessionaireRoutes = ConcessionaireRoutes(concessionaireController);
+
+    const tripRepository = new TripRepository(pool);
+    const tripService = new TripService(tripRepository);
+    const tripController = new TripController(tripService);
+    const tripRoutes = TripRoutes(tripController);
+
+    const serviceTypeRepository = new ServiceTypeRepository(pool);
+    const serviceTypeService = new ServiceTypeService(serviceTypeRepository);
+    const serviceTypeController = new ServiceTypeController(serviceTypeService);
+    const serviceTypeRoutes = ServiceTypeRoutes(serviceTypeController);
+
     return {
         passengerRoutes,
         pricingRoutes,
         geoRoutes,
         driverRoutes,
         userRoutes,
+        zoneRoutes,
+        driverAuthRoutes,
+        concessionaireRoutes,
+        tripRoutes,
+        serviceTypeRoutes,
     }
 }

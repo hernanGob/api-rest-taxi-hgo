@@ -1,28 +1,36 @@
-import type { Request, Response, NextFunction } from 'express';
-import jwt, { type JwtPayload } from 'jsonwebtoken';
-import { config } from '../config/config.js';
+import type { Request, Response, NextFunction } from "express";
+import jwt, { type JwtPayload } from "jsonwebtoken";
+import { config } from "../config/config.js";
 
-
-export function authenticateTokenWeb(req: Request, res: Response, next: NextFunction) {
+export function authenticateTokenWeb(
+    req: Request,
+    res: Response,
+    next: NextFunction
+) {
     try {
-        const cookie = req.cookies['admin_token'];
+        if (req.method === "OPTIONS") {
+            return next();
+        }
 
-        // validar formato "Bearer <tokenEncriptado:iv>"
-        if (!cookie) {
+        const token = req.cookies?.admin_token;
+
+        if (!token) {
             return res.status(401).json({
-                status: 'error',
-                msg: 'Sesión inválida',
+                ok: false,
+                status: "error",
+                msg: "Sesión inválida",
             });
         }
 
         let decoded: string | JwtPayload;
+
         try {
-            decoded = jwt.verify(cookie, config.JWT_SECRET);
-        } catch (err) {
-            // expirado o inválido
+            decoded = jwt.verify(token, config.JWT_SECRET);
+        } catch {
             return res.status(401).json({
-                status: 'error',
-                msg: 'Sesión expirada',
+                ok: false,
+                status: "expired",
+                msg: "Sesión expirada",
             });
         }
 
@@ -31,9 +39,11 @@ export function authenticateTokenWeb(req: Request, res: Response, next: NextFunc
         return next();
     } catch (error) {
         console.error(error);
+
         return res.status(403).json({
-            status: 'error',
-            msg: 'Error al comprobar la sesión',
+            ok: false,
+            status: "error",
+            msg: "Error al comprobar la sesión",
         });
     }
 }

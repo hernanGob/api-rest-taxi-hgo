@@ -49,12 +49,12 @@ export class PricingController {
 
             const data: PricingConfigDto = {
                 scope: body.scope,
-                zoneId: body.zoneId ?? null,
-                municipalityId: body.municipalityId ?? null,
-                baseFare: Number(body.baseFare),
-                perMinute: Number(body.perMinute),
-                perKm: Number(body.perKm),
-                isActive: body.isActive ?? true,
+                zoneId: body.zoneId ?? body.zone_id ?? null,
+                municipalityId: body.municipalityId ?? body.municipality_id ?? null,
+                baseFare: Number(body.baseFare ?? body.base_fare),
+                perMinute: Number(body.perMinute ?? body.per_minute),
+                perKm: Number(body.perKm ?? body.per_km),
+                isActive: body.isActive ?? body.is_active ?? true,
             };
 
             const result = await this.pricingService.createPricingConfig(data);

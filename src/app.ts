@@ -46,7 +46,7 @@ export const createApp = () => {
 
             return callback(new Error('Not allowed by CORS'));
         },
-        methods: ['GET', 'POST', 'PUT', 'DELETE'],
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
         allowedHeaders: ['Content-Type', 'Authorization'],
         credentials: true,
     }));
@@ -84,13 +84,18 @@ export const createApp = () => {
         }
     });
 
-    /* app.use('/api', apiLimiter); */
+    //app.use('/api', apiLimiter);
 
     app.use('/api/user', container.userRoutes);
     app.use('/api/passenger', container.passengerRoutes);
     app.use('/api/pricing', container.pricingRoutes);
     app.use('/api/geo', container.geoRoutes);
     app.use('/api/driver', container.driverRoutes);
+    app.use("/api/driver/auth", container.driverAuthRoutes);
+    app.use('/api/concessionaires', container.concessionaireRoutes);
+    app.use('/api/zone', container.zoneRoutes);
+    app.use("/api/trips", container.tripRoutes);
+    app.use("/api/service-types", container.serviceTypeRoutes);
 
     app.use((_req: Request, res: Response) => {
         return res.status(404).json({

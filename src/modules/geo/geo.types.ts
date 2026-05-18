@@ -65,4 +65,5 @@ export interface RouteInfo {
 export interface IGeoRepository {
     listZones(active?: boolean): Promise<Zone[]>;
     listMunicipalities(filters: MunicipalityFilters): Promise<Municipality[]>;
+    findMunicipalityByName(name: string): Promise<any | null>;
 }

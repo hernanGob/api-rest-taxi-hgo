@@ -28,5 +28,10 @@ export const GeoRoutes = (geoController: GeoController) => {
         geoController.routeInfo.bind(geoController)
     );
 
+    router.get(
+        "/municipality-by-coordinates",
+        geoController.getMunicipalityByCoordinates.bind(geoController)
+    );
+
     return router;
 };

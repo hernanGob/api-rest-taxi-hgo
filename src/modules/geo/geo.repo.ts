@@ -88,4 +88,18 @@ export class GeoRepository implements IGeoRepository {
 
         return result.rows.map(mapMunicipalityRow);
     }
+
+    async findMunicipalityByName(name: string) {
+        const result = await this.db.query(
+            `
+    SELECT id, name, number, zone_id, is_active, created_at
+    FROM public.municipality
+    WHERE lower(name) ILIKE lower($1)
+    LIMIT 1;
+    `,
+            [`%${name}%`]
+        );
+
+        return result.rows[0] ?? null;
+    }
 }

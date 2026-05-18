@@ -61,4 +61,21 @@ export class UserController {
             next(error);
         }
     }
+
+    logOut(_req: Request, res: Response, next: NextFunction) {
+        try {
+            res.clearCookie("admin_token", {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === "production",
+                sameSite: "lax",
+            });
+
+            return res.status(200).json({
+                status: "success",
+                msg: "Sesión cerrada correctamente",
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
 }

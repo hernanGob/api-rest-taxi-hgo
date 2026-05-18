@@ -7,6 +7,7 @@ export const UserRoutes = (userController: UserController) => {
 
     router.post("/login", userController.login.bind(userController));
     router.get("/session", authenticateTokenWeb, userController.verifySession.bind(userController));
+    router.delete("/logout", authenticateTokenWeb, userController.logOut.bind(userController));
 
     return router;
 };

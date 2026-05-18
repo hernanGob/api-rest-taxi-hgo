@@ -38,7 +38,7 @@ export class StchAuthService {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                "Accept": "application/json",
+                Accept: "application/json",
             },
             body: JSON.stringify({
                 usuario: STCH_USER,
@@ -46,11 +46,24 @@ export class StchAuthService {
             }),
         });
 
+        const raw = await response.text();
+
         if (!response.ok) {
-            throw new Error(`Error en login STCH: HTTP ${response.status}`);
+            console.error("[STCH LOGIN ERROR]", {
+                status: response.status,
+                body: raw,
+                STCH_API,
+                STCH_USER,
+                hasPassword: Boolean(STCH_PASSWORD),
+            });
+
+            throw Object.assign(
+                new Error(`Error en login STCH: HTTP ${response.status}`),
+                { code: response.status }
+            );
         }
 
-        const data = (await response.json()) as LoginApiResponse;
+        const data = JSON.parse(raw) as LoginApiResponse;
 
         if (!data?.success || !data?.token) {
             throw new Error("No se pudo obtener el token de STCH");

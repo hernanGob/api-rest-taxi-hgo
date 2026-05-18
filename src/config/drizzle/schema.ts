@@ -214,7 +214,7 @@ export const trips = pgTable(
             .notNull()
             .references(() => passenger.id, { onDelete: "cascade" }),
 
-        idOperador:  integer('idoperador'),
+        idOperador: integer('idoperador'),
 
         origin: jsonb("origin").notNull(),
         destination: jsonb("destination").notNull(),
@@ -252,6 +252,9 @@ export const trips = pgTable(
 
         passengerComment: text("passenger_comment"),
         driverComment: text("driver_comment"),
+
+        pickupCode: varchar("pickup_code", { length: 5 }),
+        acceptedAt: timestamp("accepted_at", { withTimezone: false }),
     },
     (t) => [
         index("trips_passenger_id_idx").on(t.passengerId),
@@ -263,21 +266,15 @@ export const trips = pgTable(
 
 
 /* ===================== DRIVERS ===================== */
-/* export const drivers = pgTable(
+export const drivers = pgTable(
     "drivers",
     {
         id: uuid("id").primaryKey().notNull(),
-
-        firstName: text("first_name").notNull(),
-        paternalSurname: text("paternal_surname").notNull(),
-        maternalSurname: text("maternal_surname").default(""),
-
-        expirationDate: date('expiration_date').notNull(),
-        profilePicture: text('profile_picture'),
-
+        idoperador: integer('id_operador').notNull().unique(),
+        password: text('password'),
         createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
         updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
     },
     (t) => [
     ],
-); */
+);

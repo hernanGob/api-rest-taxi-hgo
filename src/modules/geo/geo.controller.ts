@@ -82,4 +82,23 @@ export class GeoController {
             next(error);
         }
     }
+
+    async getMunicipalityByCoordinates(
+        req: Request,
+        res: Response,
+        next: NextFunction
+    ) {
+        try {
+            const lat = Number(req.query.lat);
+            const lng = Number(req.query.lng);
+            const result = await this.geoService.getMunicipalityByCoordinates(lat, lng);
+
+            return res.status(200).json({
+                status: "success",
+                data: result,
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
 }

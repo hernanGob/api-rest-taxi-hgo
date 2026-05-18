@@ -24,6 +24,6 @@ export const config: Config = {
     REDIS_URL: process.env.REDIS_URL || '',
     API_KEY_GOOGLE: process.env.API_KEY_GOOGLE || '',
     API_STCH: process.env.API_STCH || '',
-    STCH_USER: process.env.API_STCH || '',
-    STCH_PASSWORD: process.env.API_STCH || '',
+    STCH_USER: process.env.STCH_USER || '',
+    STCH_PASSWORD: process.env.STCH_PASSWORD || '',
 };

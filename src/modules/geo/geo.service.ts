@@ -144,4 +144,91 @@ export class GeoService {
             durationText: leg?.duration?.text ?? null,
         };
     }
+
+    async getMunicipalityByCoordinates(lat: number, lng: number) {
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+            throw new Error("Coordenadas inválidas");
+        }
+
+        if (!config.API_KEY_GOOGLE) {
+            throw new Error("Falta configurar API_KEY_GOOGLE");
+        }
+
+        const response = await axios.get(
+            "https://maps.googleapis.com/maps/api/geocode/json",
+            {
+                params: {
+                    latlng: `${lat},${lng}`,
+                    language: "es",
+                    region: "mx",
+                    key: config.API_KEY_GOOGLE,
+                },
+                timeout: 10000,
+            }
+        );
+
+        const { status, results, error_message } = response.data || {};
+
+        if (status !== "OK") {
+            throw new Error(error_message || `Geocoding API error: ${status}`);
+        }
+
+        const components =
+            results?.flatMap((r: any) => r.address_components ?? []) ?? [];
+
+        const municipalityComponent =
+            components.find((c: any) =>
+                c.types?.includes("administrative_area_level_2")
+            ) ??
+            components.find((c: any) =>
+                c.types?.includes("locality")
+            ) ??
+            components.find((c: any) =>
+                c.types?.includes("administrative_area_level_3")
+            ) ??
+            components.find((c: any) =>
+                c.types?.includes("sublocality")
+            );
+
+        if (!municipalityComponent) {
+            console.log(
+                "[GEO COMPONENTS]",
+                components.map((c: any) => ({
+                    long_name: c.long_name,
+                    short_name: c.short_name,
+                    types: c.types,
+                }))
+            );
+
+            throw new Error("No se pudo obtener el municipio con las coordenadas");
+        }
+
+        const possibleNames = [
+            municipalityComponent.long_name,
+            municipalityComponent.short_name,
+        ].filter(Boolean);
+
+        let municipality = null;
+
+        for (const name of possibleNames) {
+            municipality = await this.geoRepository.findMunicipalityByName(name);
+
+            if (municipality) break;
+        }
+
+        if (!municipality) {
+            console.log("[MUNICIPALITY NOT FOUND]", {
+                possibleNames,
+                component: municipalityComponent,
+            });
+
+            throw new Error(`Municipio no registrado: ${possibleNames.join(" / ")}`);
+        }
+
+        return {
+            municipalityId: municipality.id,
+            name: municipality.name,
+            zoneId: municipality.zone_id,
+        };
+    }
 }

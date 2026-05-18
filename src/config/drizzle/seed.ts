@@ -1,4 +1,4 @@
-import { municipality, userRole, } from "./schema.js";
+import { municipality, serviceType, tripStatus, userRole, } from "./schema.js";
 import { generateUUID } from "../../utils/uuid.js";
 import pool, { db } from "../db.js";
 
@@ -101,11 +101,19 @@ async function main() {
         }
     ];
 
-    /* const services_type = [
+    const services_type = [
         { id: 1, name: "Esencial", increasePercentage: "0" },
         { id: 2, name: "Selecto", increasePercentage: "10" },
         { id: 3, name: "Prime", increasePercentage: "20" }
-    ]; */
+    ];
+
+    const trip_statuses = [
+        { id: 1, status: "Solicitado" },
+        { id: 2, status: "Aceptado" },
+        { id: 3, status: "En curso" },
+        { id: 4, status: "Completado" },
+        { id: 5, status: "Cancelado" },
+    ];
 
     await db.insert(userRole)
         .values(
@@ -125,18 +133,28 @@ async function main() {
             }))
         ).onConflictDoNothing({ target: municipality.name });
 
-    /* await db.insert(serviceType)
+    await db.insert(serviceType)
         .values(
             services_type.map(r => ({
                 id: r.id,
                 name: r.name,
                 increasePercentage: r.increasePercentage
             }))
-        ).onConflictDoNothing({ target: serviceType.name }); */
+        ).onConflictDoNothing({ target: serviceType.name });
+
+    await db.insert(tripStatus)
+        .values(
+            trip_statuses.map((r) => ({
+                id: r.id,
+                status: r.status,
+            }))
+        )
+        .onConflictDoNothing({ target: tripStatus.status });
 
     console.log("✅ Roles insertados");
     console.log("✅ Tipos servicio insertados");
-    /* console.log("✅ Municipios insertados"); */
+    console.log("✅ Municipios insertados");
+    console.log("✅ Estatus de viaje insertados");
 }
 
 main()

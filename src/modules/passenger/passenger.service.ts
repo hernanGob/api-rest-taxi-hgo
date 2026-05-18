@@ -21,7 +21,7 @@ export class PassengerService {
         }
 
         const resultPassenger = await this.passengerRepository.findPassengerByEmail(data.email);
-        if(resultPassenger){
+        if (resultPassenger) {
             throw new Error("El usuario ya esta registrado");
         }
 
@@ -77,9 +77,19 @@ export class PassengerService {
         }
 
         const token = signToken({
-            sub: resultPassenger.id
+            sub: resultPassenger.id,
+            type: "passenger",
         });
 
-        return token;
+        return {
+            token,
+            user: {
+                sub: resultPassenger.id,
+                email: resultPassenger.email,
+                name: resultPassenger.name,
+                paternalSurname: resultPassenger.paternalSurname,
+                maternalSurname: resultPassenger.maternalSurname,
+            },
+        };
     }
 }
