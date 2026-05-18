@@ -38,6 +38,10 @@ export class DriverAuthService {
             throw new Error("No se pudo crear el registro local del operador");
         }
 
+        /* if (localDriver.isSuspended) { 
+            throw new Error("Su cuenta se encuentra suspendida");
+        } */
+
         return {
             existsInStch: true,
             needsPassword: !localDriver.password,

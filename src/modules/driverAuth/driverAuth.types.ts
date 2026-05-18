@@ -4,6 +4,7 @@ export interface DriverAuth {
     password: string | null;
     createdAt: string;
     updatedAt: string;
+    isSuspended: boolean;
 }
 
 export interface DriverAuthRow {
@@ -12,6 +13,7 @@ export interface DriverAuthRow {
     password: string | null;
     created_at: string;
     updated_at: string;
+    is_suspended: boolean;
 }
 
 export interface IDriverAuthRepository {

@@ -50,6 +50,13 @@
       "when": 1779126038447,
       "tag": "0006_tired_nehzno",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1779128998689,
+      "tag": "0007_complex_archangel",
+      "breakpoints": true
     }
   ]
 }

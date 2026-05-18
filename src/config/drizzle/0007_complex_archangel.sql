@@ -1,0 +1,1 @@
+ALTER TABLE "drivers" ADD COLUMN "is_suspended" boolean DEFAULT false NOT NULL;

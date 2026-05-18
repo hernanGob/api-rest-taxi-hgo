@@ -11,6 +11,7 @@ const mapDriverAuth = (row: DriverAuthRow): DriverAuth => ({
     password: row.password,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    isSuspended: row.is_suspended,
 });
 
 export class DriverAuthRepository implements IDriverAuthRepository {

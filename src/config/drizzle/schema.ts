@@ -274,6 +274,7 @@ export const drivers = pgTable(
         password: text('password'),
         createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
         updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+        isSuspended: boolean('is_suspended').notNull().default(false),
     },
     (t) => [
     ],

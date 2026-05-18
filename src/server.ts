@@ -1,11 +1,11 @@
 import { createApp } from "./app.js";
 import { config } from "./config/config.js";
-import { connectRedis } from "./shared/redis/redis.client.js";
+//import { connectRedis } from "./shared/redis/redis.client.js";
 
 const main = async () => {
 
     try {
-        await connectRedis();
+        //await connectRedis();
 
         const app = createApp();
 
