@@ -30,6 +30,10 @@ import { ServiceTypeRepository } from "./serviceType/serviceType.repo.js";
 import { ServiceTypeRoutes } from "./serviceType/serviceType.routes.js";
 import { ServiceTypeService } from "./serviceType/serviceType.service.js";
 import { StchAuthService } from "./stch/stchAuth.service.js";
+import { SupportChatController } from "./supportChat/supportChat.controller.js";
+import { SupportChatRepository } from "./supportChat/supportChat.repo.js";
+import { SupportChatRoutes } from "./supportChat/supportChat.routes.js";
+import { SupportChatService } from "./supportChat/supportChat.service.js";
 import { TripController } from "./trips/trip.controller.js";
 import { TripRepository } from "./trips/trip.repo.js";
 import { TripRoutes } from "./trips/trip.routes.js";
@@ -95,6 +99,11 @@ export const buildContainer = () => {
     const serviceTypeController = new ServiceTypeController(serviceTypeService);
     const serviceTypeRoutes = ServiceTypeRoutes(serviceTypeController);
 
+    const supportChatRepository = new SupportChatRepository(pool);
+    const supportChatService = new SupportChatService(supportChatRepository);
+    const supportChatController = new SupportChatController(supportChatService);
+    const supportChatRoutes = SupportChatRoutes(supportChatController);
+
     return {
         passengerRoutes,
         pricingRoutes,
@@ -106,5 +115,6 @@ export const buildContainer = () => {
         concessionaireRoutes,
         tripRoutes,
         serviceTypeRoutes,
+        supportChatRoutes,
     }
 }

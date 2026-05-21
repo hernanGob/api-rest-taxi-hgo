@@ -12,6 +12,7 @@ interface UserRow {
     created_at: string;
     updated_at: string;
     user_role_id: string | null;
+    user_role: string | null;
 }
 
 export class UserRepository implements IUserRepository {
@@ -30,8 +31,10 @@ export class UserRepository implements IUserRepository {
         u.password_hash,
         u.created_at,
         u.updated_at,
-        u.user_role_id
+        u.user_role_id,
+        ur.code as "user_role"
       FROM public."user" u
+      join public.user_role ur on ur.id = u.user_role_id
       WHERE u.email = trim(lower($1))
       LIMIT 1;
       `,
@@ -53,6 +56,7 @@ export class UserRepository implements IUserRepository {
             createdAt: row.created_at,
             updatedAt: row.updated_at,
             userRoleId: row.user_role_id,
+            userRole: row.user_role,
         };
     }
 }

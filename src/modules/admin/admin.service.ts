@@ -36,7 +36,7 @@ export class UserService {
 
         const token = signToken({
             sub: user.id,
-            rol: Number(user.userRoleId),
+            rol: user.userRole,
         });
 
         return {

@@ -13,6 +13,7 @@ interface Config {
     API_STCH: string;
     STCH_USER: string;
     STCH_PASSWORD: string;
+    CLIENT_URL: string;
 }
 
 export const config: Config = {
@@ -26,4 +27,5 @@ export const config: Config = {
     API_STCH: process.env.API_STCH || '',
     STCH_USER: process.env.STCH_USER || '',
     STCH_PASSWORD: process.env.STCH_PASSWORD || '',
+    CLIENT_URL: process.env.CLIENT_URL || '*',
 };

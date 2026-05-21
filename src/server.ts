@@ -1,5 +1,7 @@
 import { createApp } from "./app.js";
 import { config } from "./config/config.js";
+import http from 'http';
+import { initializeSocket } from "./socket/index.js";
 //import { connectRedis } from "./shared/redis/redis.client.js";
 
 const main = async () => {
@@ -8,8 +10,10 @@ const main = async () => {
         //await connectRedis();
 
         const app = createApp();
+        const httpServer = http.createServer(app);
+        initializeSocket(httpServer);
 
-        app.listen(config.port, () => {
+        httpServer.listen(config.port, () => {
             console.log(`Servidor corriendo en el puerto: ${config.port}`);
         });
     } catch (error) {

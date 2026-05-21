@@ -167,4 +167,58 @@ export class DriverService {
             throw error;
         }
     }
+
+    async findDriverByFullName(name: string, paternalSurname: string, maternalSurname: string, pagina: number, limite: number) {
+        try {
+            const token = await this.stchAuthService.getValidStchToken();
+
+            const response = await fetch(
+                `${BASE_URL}/operadores?nombre=${name}&apellidopaterno=${paternalSurname}&apellidomaterno=${maternalSurname}&pagina=${pagina}&limite=${limite}`,
+                {
+                    method: "GET",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        Accept: "application/json",
+                    },
+                }
+            );
+
+            if (response.status === 401) {
+                throw Object.assign(new Error("Token expirado o inválido"), { code: 401 });
+            }
+
+            if (!response.ok) {
+                if (response.status === 404) {
+                    return null;
+                }
+                const raw = await response.text();
+                throw new Error(`HTTP ${response.status} - ${raw}`);
+            }
+
+            const data = await response.json();
+            return Array.isArray(data) ? data[0] : data;
+        } catch (error: any) {
+            if (error?.code === 401) {
+                this.stchAuthService.clearStchTokenCache();
+                const newToken = await this.stchAuthService.getValidStchToken();
+                const retryResponse = await fetch(
+                    `${BASE_URL}/operadores?nombre=${name}&apellidopaterno=${paternalSurname}&apellidomaterno=${maternalSurname}`,
+                    {
+                        method: "GET",
+                        headers: {
+                            Authorization: `Bearer ${newToken}`,
+                            Accept: "application/json",
+                        },
+                    }
+                );
+                if (retryResponse.ok) {
+                    const data = await retryResponse.json();
+                    return Array.isArray(data) ? data[0] : data;
+                }
+            }
+
+            console.error(`Error buscando driver ${name} ${paternalSurname} ${maternalSurname}:`, error);
+            throw error;
+        }
+    }
 }

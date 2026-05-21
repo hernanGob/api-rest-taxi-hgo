@@ -15,6 +15,16 @@ import {
     date,
 } from "drizzle-orm/pg-core";
 
+export const supportConversationStatusEnum = pgEnum(
+    "support_conversation_status",
+    ["open", "closed"]
+);
+
+export const supportMessageSenderTypeEnum = pgEnum(
+    "support_message_sender_type",
+    ["passenger", "admin"]
+);
+
 /* ===================== PRICING SCOPE ENUM ===================== */
 /* export const pricingScope = pgEnum("pricing_scope", ["GLOBAL", "ZONE", "MUNICIPALITY"]); */
 
@@ -264,7 +274,6 @@ export const trips = pgTable(
     ],
 );
 
-
 /* ===================== DRIVERS ===================== */
 export const drivers = pgTable(
     "drivers",
@@ -279,3 +288,41 @@ export const drivers = pgTable(
     (t) => [
     ],
 );
+
+/* ============== SUPPORT CHAT ============== */
+export const supportConversations = pgTable("support_conversations", {
+    id: uuid("id").primaryKey().notNull(),
+    passengerId: uuid("passenger_id").notNull(),
+    assignedAdminId: uuid("assigned_admin_id"),
+    status: supportConversationStatusEnum("status").notNull().default("open"),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+        .defaultNow()
+        .notNull(),
+
+    closedAt: timestamp("closed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+        .defaultNow()
+        .notNull(),
+});
+
+export const supportMessages = pgTable("support_messages", {
+    id: uuid("id").defaultRandom().primaryKey(),
+
+    conversationId: uuid("conversation_id")
+        .notNull()
+        .references(() => supportConversations.id, {
+            onDelete: "cascade",
+        }),
+
+    senderId: uuid("sender_id").notNull(),
+
+    senderType: supportMessageSenderTypeEnum("sender_type").notNull(),
+
+    message: text("message").notNull(),
+
+    isRead: boolean("is_read").notNull().default(false),
+
+    createdAt: timestamp("created_at", { withTimezone: true })
+        .defaultNow()
+        .notNull(),
+});

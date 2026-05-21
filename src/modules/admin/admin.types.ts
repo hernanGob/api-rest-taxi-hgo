@@ -9,6 +9,7 @@ export interface User {
   createdAt: string;
   updatedAt: string;
   userRoleId: string | null;
+  userRole: string | null;
 }
 
 export interface UserLoginDto {

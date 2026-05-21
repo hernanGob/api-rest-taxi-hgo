@@ -1,4 +1,4 @@
-import type { Request, Response } from "express";
+import type { Request, Response, NextFunction } from "express";
 import type { DriverService } from "./driver.service.js";
 
 export class DriverController {
@@ -87,4 +87,36 @@ export class DriverController {
             });
         }
     };
+
+    getDriverByFullNameQuery = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const nombre = String(req.query.nombre ?? "").trim();
+            const apellidopaterno = String(req.query.apellidopaterno ?? "").trim();
+            const apellidomaterno = String(req.query.apellidomaterno ?? "").trim();
+            const pagina = Number(req.query.pagina ?? 1);
+            const limite = Number(req.query.limite ?? 10);
+
+            if (!nombre) {
+                return res.status(400).json({
+                    ok: false,
+                    msg: "El parámetro nombre es obligatorio",
+                });
+            }
+
+            const driver = await this.driverService.findDriverByFullName(nombre, apellidopaterno, apellidomaterno, pagina, limite);
+            if (!driver) {
+                return res.status(404).json({
+                    ok: false,
+                    msg: `Conductor no encontrado`,
+                });
+            }
+
+            return res.status(200).json({
+                status: 'success',
+                data: driver,
+            });
+        } catch (error) {
+            next(error)
+        }
+    }
 }

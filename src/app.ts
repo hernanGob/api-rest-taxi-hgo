@@ -96,6 +96,7 @@ export const createApp = () => {
     app.use('/api/zone', container.zoneRoutes);
     app.use("/api/trips", container.tripRoutes);
     app.use("/api/service-types", container.serviceTypeRoutes);
+    app.use("/api/support-chat", container.supportChatRoutes);
 
     app.use((_req: Request, res: Response) => {
         return res.status(404).json({
