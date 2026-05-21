@@ -10,7 +10,7 @@ const CLIENT_URL = process.env.CLIENT_URL;
 
 export function initializeSocket(server: HttpServer) {
     const io = new Server(server, {
-        path: config.nodeEnv === "development" ? '/socket.io': '/taxiapp-api/socket.io',
+        path: "/socket.io",
         cors: {
             origin: CLIENT_URL,
             credentials: true,
