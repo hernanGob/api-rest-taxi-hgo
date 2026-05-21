@@ -4,11 +4,13 @@ import { socketAuthMiddleware } from "./socketAuth.middleware.js";
 import { type AuthenticatedSocket } from "./socket.types.js";
 import { joinUserRooms, socketRooms } from "./socket.rooms.js";
 import { setSocketServer } from "./socket.service.js";
+import { config } from "../config/config.js";
 
 const CLIENT_URL = process.env.CLIENT_URL;
 
 export function initializeSocket(server: HttpServer) {
     const io = new Server(server, {
+        path: config.nodeEnv === "development" ? '/socket.io': '/taxiapp-api/socket.io',
         cors: {
             origin: CLIENT_URL,
             credentials: true,
