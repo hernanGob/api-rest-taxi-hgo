@@ -139,7 +139,7 @@ export class TripController {
     async acceptTrip(req: Request, res: Response, next: NextFunction) {
         try {
             const result = await this.tripService.acceptTrip({
-                tripId: req.params.id,
+                tripId: req.params.id as string,
                 idoperador: Number(req.body.idoperador),
             });
 
@@ -156,7 +156,7 @@ export class TripController {
     async startTrip(req: Request, res: Response, next: NextFunction) {
         try {
             const result = await this.tripService.startTrip({
-                tripId: req.params.id,
+                tripId: req.params.id as string,
                 idoperador: Number(req.body.idoperador),
                 pickupCode: String(req.body.pickupCode),
             });
@@ -174,7 +174,7 @@ export class TripController {
     async completeTrip(req: Request, res: Response, next: NextFunction) {
         try {
             const result = await this.tripService.completeTrip({
-                tripId: req.params.id,
+                tripId: req.params.id as string,
                 idoperador: Number(req.body.idoperador),
             });
 

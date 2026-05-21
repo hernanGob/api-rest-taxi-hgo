@@ -1,4 +1,4 @@
-import { config } from "../../config/config.js";
+/* import { config } from "../../config/config.js";
 import { getValidStchToken, clearStchTokenCache } from "./stch.service.js";
 
 type DriverApiItem = {
@@ -128,4 +128,4 @@ export class StchDriverService {
             };
         }
     };
-}
+} */
