@@ -32,7 +32,7 @@ export function initializeSocket(server: HttpServer) {
 
         joinUserRooms(socket);
 
-        //console.log("Socket connected:", socket.id);
+        console.log("Socket connected:", socket.id);
         //console.log("Socket rooms:", Array.from(socket.rooms));
         //console.log("JWT payload:", user);
 

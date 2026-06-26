@@ -90,7 +90,7 @@ export const buildContainer = () => {
     const concessionaireRoutes = ConcessionaireRoutes(concessionaireController);
 
     const tripRepository = new TripRepository(pool);
-    const tripService = new TripService(tripRepository);
+    const tripService = new TripService(tripRepository, geoService);
     const tripController = new TripController(tripService);
     const tripRoutes = TripRoutes(tripController);
 

@@ -3,6 +3,8 @@ import type { TripService } from "./trip.service.js";
 import type { CreateTripDto } from "./trip.types.js";
 import { validateCreateTripBody } from "./trip.validation.js";
 
+type TripRating = 1 | 2 | 3;
+
 export class TripController {
     constructor(private readonly tripService: TripService) { }
 
@@ -96,28 +98,18 @@ export class TripController {
         }
     }
 
-    async listTripHistoryByPassenger(
-        req: Request,
-        res: Response,
-        next: NextFunction
-    ) {
+    async listTripHistoryByPassenger(req: Request, res: Response, next: NextFunction) {
         try {
-            const passengerIdRaw = req.params.passengerId;
-            const passengerId = typeof passengerIdRaw === "string" ? passengerIdRaw : "";
+            const passengerId = req.user.sub;
 
             if (!passengerId) {
-                return res.status(400).json({
-                    status: "error",
-                    msg: "El passengerId es requerido",
-                });
+                return res.status(400).json({ status: "error", msg: "El passengerId es requerido" });
             }
 
-            const result = await this.tripService.listTripHistoryByPassenger(passengerId);
+            // Llama al service que hace el mapping con direcciones legibles
+            const trips = await this.tripService.listTripHistoryByPassengerForApp(passengerId);
 
-            return res.status(200).json({
-                status: "success",
-                data: result,
-            });
+            return res.status(200).json({ status: "success", data: trips });
         } catch (error) {
             next(error);
         }
@@ -182,6 +174,50 @@ export class TripController {
                 status: "success",
                 msg: "Viaje completado correctamente",
                 data: result,
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    private parseTripRating(value: string | number): TripRating {
+        const rating = Number(value);
+
+        if (rating !== 1 && rating !== 2 && rating !== 3) {
+            throw new Error("La calificación debe ser 1, 2 o 3");
+        }
+
+        return rating;
+    };
+
+    async rateTrip(req: Request, res: Response, next: NextFunction) {
+        try {
+            const { rating, comment } = req.body;
+            const { id: tripId } = req.params;
+
+            const result = await this.tripService.rateTrip({
+                tripId: tripId as string,
+                rating: this.parseTripRating(rating),
+                comment: String(comment),
+            });
+
+            return res.status(200).json({
+                status: "success",
+                msg: "Viaje calificado correctamente",
+                data: result,
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    async showTripsForDashboard(_req: Request, res: Response, next: NextFunction) {
+        try {
+            const result = await this.tripService.showAllTripsForDashboard();
+
+            return res.status(200).json({
+                status: 'sucess',
+                data: result
             });
         } catch (error) {
             next(error);

@@ -5,9 +5,10 @@ import type {
     ITripRepository,
     Trip,
     TripPoint,
+    TripsForDashboard,
 } from "./trip.types.js";
 
-interface TripRow {
+export interface TripRow {
     id: string;
     passenger_id: string;
     idoperador: number | null;
@@ -125,19 +126,14 @@ export class TripRepository implements ITripRepository {
         return result.rows.map(mapTrip);
     }
 
-    async listTripHistoryByPassenger(passengerId: string): Promise<Trip[]> {
+    async listTripHistoryByPassenger(passengerId: string): Promise<TripRow[]> {
         const result = await this.db.query<TripRow>(
-            `
-    SELECT *
-    FROM public.trips
-    WHERE passenger_id = $1
-      AND trip_status_id IN (3, 4)
-    ORDER BY completed_at DESC NULLS LAST, requested_at DESC;
-    `,
+            `SELECT * FROM public.trips WHERE passenger_id = $1 AND trip_status_id IN (3,4) ORDER BY completed_at DESC NULLS LAST, requested_at DESC`,
             [passengerId]
         );
 
-        return result.rows.map(mapTrip);
+        // NO mapeas a Trip todavía
+        return result.rows;
     }
 
     async listRequestedTripsForDriver(): Promise<Trip[]> {
@@ -227,5 +223,52 @@ export class TripRepository implements ITripRepository {
 
         const row = result.rows[0];
         return row ? mapTrip(row) : null;
+    }
+
+    async rateTrip(data: { tripId: string; rating: 1 | 2 | 3; comment: string }): Promise<Trip | null> {
+        const result = await this.db.query<TripRow>(
+            `
+    UPDATE public.trips
+    SET passenger_rating = $2,
+        passenger_comment = $3
+    WHERE id = $1
+    RETURNING *;
+    `,
+            [data.tripId, data.rating, data.comment]
+        );
+
+        const row = result.rows[0];
+        return row ? mapTrip(row) : null;
+    }
+
+    async listAllTrips(): Promise<TripsForDashboard[] | []> {
+        const result = await this.db.query(
+            `
+            select
+                t.id as "trip_id",
+                concat(p."name", ' ', p.paternal_surname, ' ', p.maternal_surname) as "passenger_name",
+                t.origin,
+                t.destination,
+                t.distance_km,
+                t.fare,
+                ts.status,
+                to_char(t.requested_at, 'DD/MM/YYYY HH12:MI:SS AM') as "requested_at",
+                to_char(t.started_at, 'DD/MM/YYYY HH12:MI:SS AM') as "started_at",
+                to_char(t.completed_at, 'DD/MM/YYYY HH12:MI:SS AM') as "completed_at",
+                t.duration_minutes,
+                t.passenger_rating,
+                t.passenger_comment
+            from public.trips t
+                join public.passenger p on p.id = t.passenger_id
+                join public.trip_status ts on ts.id = t.trip_status_id;
+            `,
+            []
+        );
+
+        if (result.rows.length === 0) {
+            return [];
+        }
+
+        return result.rows.map((r) => (r));
     }
 }

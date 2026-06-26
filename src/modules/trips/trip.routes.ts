@@ -1,8 +1,12 @@
 import { Router } from "express";
 import type { TripController } from "./trip.controller.js";
+import { authenticatePassenger } from "../../middleware/passengerMiddleware.js";
+import { authenticateTokenWeb } from "../../middleware/authMiddlewareAdmin.js";
 
 export const TripRoutes = (tripController: TripController) => {
     const router = Router();
+
+    router.get("/allTrips", authenticateTokenWeb, tripController.showTripsForDashboard.bind(tripController));
 
     router.post(
         "/request",
@@ -41,8 +45,11 @@ export const TripRoutes = (tripController: TripController) => {
 
     router.get(
         "/history/passenger/:passengerId",
+        authenticatePassenger,
         tripController.listTripHistoryByPassenger.bind(tripController)
     );
+
+    router.post("/:id/rate", authenticatePassenger, tripController.rateTrip.bind(tripController));
 
     return router;
 };

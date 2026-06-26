@@ -231,4 +231,51 @@ export class GeoService {
             zoneId: municipality.zone_id,
         };
     }
+
+    private addressCache = new Map<string, string | null>();
+
+    async getAddressByCoords(lat: number, lng: number): Promise<string | null> {
+        try {
+            if (!lat || !lng) {
+                return null;
+            }
+
+            const cacheKey = `${lat.toFixed(5)},${lng.toFixed(5)}`;
+
+            if (this.addressCache.has(cacheKey)) {
+                return this.addressCache.get(cacheKey) || null;
+            }
+
+            const API_KEY = config.API_KEY_GOOGLE;
+
+            const url = new URL("https://maps.googleapis.com/maps/api/geocode/json");
+
+            url.searchParams.set("latlng", `${lat},${lng}`);
+            url.searchParams.set("key", API_KEY);
+            url.searchParams.set("language", "es");
+
+            const response = await fetch(url.toString());
+
+            if (!response.ok) {
+                console.error("Error HTTP en geocoding:", response.status);
+                return null;
+            }
+
+            const data = await response.json();
+
+            if (data.status !== "OK") {
+                console.error("Error de geocoding:", data.status, data.error_message);
+                return null;
+            }
+
+            const address = data.results[0]?.formatted_address || null;
+
+            this.addressCache.set(cacheKey, address);
+
+            return address;
+        } catch (error) {
+            console.error("Error obteniendo dirección por coordenadas:", error);
+            return null;
+        }
+    }
 }
