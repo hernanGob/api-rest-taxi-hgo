@@ -23,7 +23,6 @@ export function initializeSocket(server: HttpServer) {
 
     io.on("connection", (socket: AuthenticatedSocket) => {
         const user = socket.user;
-        //console.log("user: ", user)
 
         if (!user) {
             socket.disconnect();
@@ -32,8 +31,8 @@ export function initializeSocket(server: HttpServer) {
 
         joinUserRooms(socket);
 
-        console.log("Socket connected:", socket.id);
-        //console.log("Socket rooms:", Array.from(socket.rooms));
+        console.log(`Socket connected ${user.type || user.rol}:`, socket.id);
+        console.log("Socket rooms:", Array.from(socket.rooms));
         //console.log("JWT payload:", user);
 
         socket.emit("connected", {

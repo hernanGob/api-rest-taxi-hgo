@@ -3,6 +3,7 @@ import type { TripRepository } from "./trip.repo.js";
 import type { CreateTripDto } from "./trip.types.js";
 import { mapTripForApp } from "./trip.mapper.js";
 import type { GeoService } from "../geo/geo.service.js";
+import { mapOperatorTripHistoryForApp } from "./tripHistoryOperator.mapper.js";
 
 export class TripService {
     constructor(
@@ -148,6 +149,42 @@ export class TripService {
         return result;
     }
 
+    async rateTripOperator(data: {
+        tripId: string;
+        rating: 1 | 2 | 3;
+        comment: string;
+    }) {
+        if (!validator.isUUID(data.tripId)) {
+            throw new Error("El id del viaje no es válido");
+        }
+
+        if (![1, 2, 3].includes(data.rating)) {
+            throw new Error("El rating debe ser 1, 2 o 3");
+        }
+
+        const comment = data.comment.trim();
+
+        if (!comment) {
+            throw new Error("El comentario es obligatorio");
+        }
+
+        if (comment.length < 5) {
+            throw new Error("El comentario debe tener al menos 5 caracteres");
+        }
+
+        const result = await this.tripRepository.rateTripOperator({
+            tripId: data.tripId,
+            rating: data.rating,
+            comment,
+        });
+
+        if (!result) {
+            throw new Error("No se pudo calificar el viaje");
+        }
+
+        return result;
+    }
+
     async showAllTripsForDashboard() {
         const trips = await this.tripRepository.listAllTrips();
 
@@ -182,5 +219,15 @@ export class TripService {
         );
 
         return data;
+    }
+
+    async listTripHistoryByOperator(operatorId: number) {
+        const rows = await this.tripRepository.listTripsByOperator(operatorId);
+
+        const trips = await Promise.all(
+            rows.map((row) => mapOperatorTripHistoryForApp(row))
+        );
+
+        return trips;
     }
 }

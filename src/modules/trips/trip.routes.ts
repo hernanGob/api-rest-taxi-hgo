@@ -2,6 +2,7 @@ import { Router } from "express";
 import type { TripController } from "./trip.controller.js";
 import { authenticatePassenger } from "../../middleware/passengerMiddleware.js";
 import { authenticateTokenWeb } from "../../middleware/authMiddlewareAdmin.js";
+import { authenticateOperador } from "../../middleware/operadorMiddleware.js";
 
 export const TripRoutes = (tripController: TripController) => {
     const router = Router();
@@ -50,6 +51,14 @@ export const TripRoutes = (tripController: TripController) => {
     );
 
     router.post("/:id/rate", authenticatePassenger, tripController.rateTrip.bind(tripController));
+
+    router.get(
+        "/history/operador",
+        authenticateOperador,
+        tripController.listTripHistoryByOperator.bind(tripController)
+    );
+
+    router.post("/:id/rate-driver", authenticateOperador, tripController.rateTripOperator.bind(tripController));
 
     return router;
 };

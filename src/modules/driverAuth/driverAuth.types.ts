@@ -5,6 +5,10 @@ export interface DriverAuth {
     createdAt: string;
     updatedAt: string;
     isSuspended: boolean;
+    nombre: string;
+    apellidoPaterno: string;
+    apellidoMaterno: string;
+    imagenPerfil: string;
 }
 
 export interface DriverAuthRow {
@@ -14,6 +18,10 @@ export interface DriverAuthRow {
     created_at: string;
     updated_at: string;
     is_suspended: boolean;
+    nombre: string;
+    apellido_paterno: string;
+    apellido_materno: string;
+    imagen_perfil: string;
 }
 
 export interface IDriverAuthRepository {

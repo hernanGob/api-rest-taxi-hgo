@@ -280,6 +280,10 @@ export const drivers = pgTable(
     {
         id: uuid("id").primaryKey().notNull(),
         idoperador: integer('id_operador').notNull().unique(),
+        nombre: text('nombre').notNull(),
+        apellidoPaterno: text('apellido_paterno').notNull(),
+        apellidoMaterno: text('apellido_materno').notNull(),
+        imagenPerfil: text('imagen_perfil').notNull(),
         password: text('password'),
         createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
         updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),

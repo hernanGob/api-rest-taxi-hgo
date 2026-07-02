@@ -16,13 +16,13 @@ export function getSocketServer() {
     return ioInstance;
 }
 
-/* export function emitToUser<TPayload>(
+export function emitToUser<TPayload>(
     sub: string,
     event: string,
     payload: TPayload
 ) {
     getSocketServer().to(socketRooms.user(sub)).emit(event, payload);
-} */
+}
 
 export function emitToArea<TPayload>(
     areaId: number,

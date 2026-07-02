@@ -211,6 +211,29 @@ export class TripController {
         }
     }
 
+    async rateTripOperator(req: Request, res: Response, next: NextFunction) {
+        try {
+            const { rating, comment } = req.body;
+            const { id: tripId } = req.params;
+
+            const parsedComment = String(comment ?? "").trim();
+
+            const result = await this.tripService.rateTripOperator({
+                tripId: tripId as string,
+                rating: this.parseTripRating(rating),
+                comment: parsedComment,
+            });
+
+            return res.status(200).json({
+                status: "success",
+                msg: "Viaje calificado correctamente",
+                data: result,
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+
     async showTripsForDashboard(_req: Request, res: Response, next: NextFunction) {
         try {
             const result = await this.tripService.showAllTripsForDashboard();
@@ -221,6 +244,38 @@ export class TripController {
             });
         } catch (error) {
             next(error);
+        }
+    }
+
+    async listTripHistoryByOperator(req: Request, res: Response) {
+        try {
+            const operador = req.user as {
+                idoperador?: number;
+            };
+
+            const operatorId = Number(operador?.idoperador);
+
+            if (!operatorId) {
+                return res.status(401).json({
+                    status: "error",
+                    msg: "No se pudo obtener el operador autenticado",
+                });
+            }
+
+            const trips = await this.tripService.listTripHistoryByOperator(operatorId);
+
+            return res.status(200).json({
+                status: "success",
+                msg: "Historial de viajes obtenido correctamente",
+                data: trips,
+            });
+        } catch (error) {
+            console.error("Error obteniendo historial de operador:", error);
+
+            return res.status(500).json({
+                status: "error",
+                msg: "Error al obtener el historial de viajes",
+            });
         }
     }
 }

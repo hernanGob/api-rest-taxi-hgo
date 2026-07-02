@@ -17,7 +17,6 @@ export class DriverAuthService {
         }
 
         const stchDriver = await this.driverService.findDriverById(idoperador);
-
         if (!stchDriver) {
             throw new Error("El operador no existe en STCH");
         }
@@ -30,6 +29,10 @@ export class DriverAuthService {
             localDriver = await this.driverAuthRepository.createDriverAuth({
                 id: generateUUID(),
                 idoperador,
+                nombre: stchDriver.datos[0].nombre,
+                apellidopaterno: stchDriver.datos[0].apellidopaterno,
+                apellidomaterno: stchDriver.datos[0].apellidomaterno,
+                imagen_perfil: stchDriver.datos[0].datos,
                 password: null,
             });
         }
@@ -82,6 +85,10 @@ export class DriverAuthService {
             localDriver = await this.driverAuthRepository.createDriverAuth({
                 id: generateUUID(),
                 idoperador: data.idoperador,
+                nombre: stchDriver.datos[0].nombre,
+                apellidopaterno: stchDriver.datos[0].apellidopaterno,
+                apellidomaterno: stchDriver.datos[0].apellidomaterno,
+                imagen_perfil: stchDriver.datos[0].datos,
                 password: passwordHash,
             });
         } else {
@@ -146,6 +153,10 @@ export class DriverAuthService {
             driver: {
                 id: localDriver.id,
                 idoperador: localDriver.idoperador,
+                nombre: localDriver.nombre,
+                apellidoPaterno: localDriver.apellidoPaterno,
+                apellidoMaterno: localDriver.apellidoMaterno,
+                imagenPerfil: localDriver.imagenPerfil,
             },
         };
     }

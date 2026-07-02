@@ -1,3 +1,5 @@
+import type { OperatorTripHistoryRow } from "./tripHistoryOperator.mapper.js";
+
 export type TripPoint = {
     lat: number;
     lng: number;
@@ -98,6 +100,9 @@ export interface TripsForDashboard {
     duration_minutes: string;
     passenger_rating: string;
     passenger_comment: string;
+    driver_rating: string;
+    driver_comment: string;
+    driver_name: string;
 }
 
 
@@ -108,4 +113,7 @@ export interface ITripRepository {
     listTripHistoryByPassenger(passengerId: string): Promise<TripRow[]>;
     rateTrip(data: { tripId: string; rating: 1 | 2 | 3; comment: string }): Promise<Trip | null>;
     listAllTrips(): Promise<TripsForDashboard[] | []>;
+
+    //OPERATOR
+    listTripsByOperator(operatorId: number): Promise<OperatorTripHistoryRow[]>;
 }

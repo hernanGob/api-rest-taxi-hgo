@@ -7,6 +7,7 @@ import type {
     TripPoint,
     TripsForDashboard,
 } from "./trip.types.js";
+import type { OperatorTripHistoryRow } from "./tripHistoryOperator.mapper.js";
 
 export interface TripRow {
     id: string;
@@ -241,6 +242,22 @@ export class TripRepository implements ITripRepository {
         return row ? mapTrip(row) : null;
     }
 
+    async rateTripOperator(data: { tripId: string; rating: 1 | 2 | 3; comment: string }): Promise<Trip | null> {
+        const result = await this.db.query<TripRow>(
+            `
+    UPDATE public.trips
+    SET driver_rating = $2,
+        driver_comment = $3
+    WHERE id = $1
+    RETURNING *;
+    `,
+            [data.tripId, data.rating, data.comment]
+        );
+
+        const row = result.rows[0];
+        return row ? mapTrip(row) : null;
+    }
+
     async listAllTrips(): Promise<TripsForDashboard[] | []> {
         const result = await this.db.query(
             `
@@ -257,10 +274,14 @@ export class TripRepository implements ITripRepository {
                 to_char(t.completed_at, 'DD/MM/YYYY HH12:MI:SS AM') as "completed_at",
                 t.duration_minutes,
                 t.passenger_rating,
-                t.passenger_comment
+                t.passenger_comment,
+                t.driver_rating as "driver_rating",
+            	t.driver_comment as "driver_comment",
+            	concat(d.nombre, ' ', d.apellido_paterno , ' ', d.apellido_materno ) as "driver_name"
             from public.trips t
                 join public.passenger p on p.id = t.passenger_id
-                join public.trip_status ts on ts.id = t.trip_status_id;
+                join public.trip_status ts on ts.id = t.trip_status_id
+				join public.drivers d on d.id_operador = t.idoperador;
             `,
             []
         );
@@ -270,5 +291,36 @@ export class TripRepository implements ITripRepository {
         }
 
         return result.rows.map((r) => (r));
+    }
+
+    async listTripsByOperator(
+        operatorId: number
+    ): Promise<OperatorTripHistoryRow[]> {
+        const result = await this.db.query<OperatorTripHistoryRow>(
+            `
+        select
+            t.id as "trip_id",
+            concat_ws(' ', p."name", p.paternal_surname, p.maternal_surname) as "passenger_name",
+            t.origin,
+            t.destination,
+            t.distance_km,
+            t.fare,
+            ts.status,
+            to_char(t.requested_at, 'DD/MM/YYYY HH12:MI:SS AM') as "requested_at",
+            to_char(t.started_at, 'DD/MM/YYYY HH12:MI:SS AM') as "started_at",
+            to_char(t.completed_at, 'DD/MM/YYYY HH12:MI:SS AM') as "completed_at",
+            t.duration_minutes,
+            t.driver_rating as "driver_rating",
+            t.driver_comment as "driver_comment"
+        from public.trips t
+            join public.passenger p on p.id = t.passenger_id
+            join public.trip_status ts on ts.id = t.trip_status_id
+        where t.idoperador = $1
+        order by t.requested_at desc
+        `,
+            [operatorId]
+        );
+
+        return result.rows;
     }
 }

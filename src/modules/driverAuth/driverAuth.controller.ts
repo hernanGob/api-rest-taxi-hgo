@@ -1,5 +1,6 @@
 import { type Request, type Response, type NextFunction } from "express";
 import type { DriverAuthService } from "./driverAuth.service.js";
+import { ConsoleLogWriter } from "drizzle-orm";
 
 export class DriverAuthController {
     constructor(private readonly driverAuthService: DriverAuthService) { }

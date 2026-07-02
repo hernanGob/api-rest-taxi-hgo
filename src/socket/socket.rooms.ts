@@ -1,7 +1,7 @@
 import { type AuthenticatedSocket, type TokenPayload } from "./socket.types.js";
 
 export const socketRooms = {
-    /* user: (sub: string) => `user:${sub}`, */
+    user: (sub: string) => `user:${sub}`,
 
     type: (type: NonNullable<TokenPayload["type"]>) => `type:${type}`,
 
