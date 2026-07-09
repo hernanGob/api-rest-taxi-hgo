@@ -33,5 +33,10 @@ export const GeoRoutes = (geoController: GeoController) => {
         geoController.getMunicipalityByCoordinates.bind(geoController)
     );
 
+    router.get(
+        "/address-by-coordinates",
+        geoController.getAddressByCoordinates.bind(geoController)
+    );
+
     return router;
 };

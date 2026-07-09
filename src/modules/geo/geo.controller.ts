@@ -101,4 +101,33 @@ export class GeoController {
             next(error);
         }
     }
+
+    async getAddressByCoordinates(req: Request, res: Response) {
+        try {
+            const lat = Number(req.query.lat);
+            const lng = Number(req.query.lng);
+
+            if (!lat || !lng) {
+                return res.status(400).json({
+                    status: "error",
+                    msg: "Coordenadas inválidas",
+                });
+            }
+
+            const address = await this.geoService.getAddressByCoords(lat, lng);
+
+            return res.status(200).json({
+                status: "success",
+                msg: "Dirección obtenida correctamente",
+                data: {
+                    address,
+                },
+            });
+        } catch (error) {
+            return res.status(500).json({
+                status: "error",
+                msg: "No se pudo obtener la dirección",
+            });
+        }
+    }
 }

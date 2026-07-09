@@ -31,6 +31,11 @@ export interface TripRow {
     driver_comment: string | null;
     accepted_at: string | null;
     pickup_code: string | null;
+    operator: {
+        idoperador: number;
+        nombre: string;
+        telefono: string;
+    } | null,
 }
 
 const mapTrip = (row: TripRow): Trip => ({
@@ -55,6 +60,7 @@ const mapTrip = (row: TripRow): Trip => ({
     driverComment: row.driver_comment,
     acceptedAt: row.accepted_at,
     pickupCode: row.pickup_code,
+    operator: row.operator,
 });
 
 export class TripRepository implements ITripRepository {
@@ -140,11 +146,11 @@ export class TripRepository implements ITripRepository {
     async listRequestedTripsForDriver(): Promise<Trip[]> {
         const result = await this.db.query<TripRow>(
             `
-    SELECT *
-    FROM public.trips
-    WHERE trip_status_id = 1
-      AND idoperador IS NULL
-    ORDER BY requested_at ASC;
+        SELECT *
+            FROM public.trips
+            WHERE trip_status_id = 1
+            AND idoperador IS NULL
+        ORDER BY requested_at ASC;
     `
         );
 
@@ -158,17 +164,28 @@ export class TripRepository implements ITripRepository {
     }): Promise<Trip | null> {
         const result = await this.db.query<TripRow>(
             `
-    UPDATE public.trips
-    SET 
-      trip_status_id = 2,
-      idoperador = $2,
-      pickup_code = $3,
-      accepted_at = now()
-    WHERE id = $1
-      AND trip_status_id = 1
-      AND idoperador IS NULL
-    RETURNING *;
-    `,
+            WITH updated_trip AS (
+                UPDATE public.trips
+                SET 
+                    trip_status_id = 2,
+                    idoperador = $2,
+                    pickup_code = $3,
+                    accepted_at = now()
+                    WHERE id = $1
+                AND trip_status_id = 1
+                AND idoperador IS NULL
+                RETURNING *
+            )
+            SELECT 
+                t.*,
+                json_build_object(
+                    'idoperador', d.id_operador,
+                    'nombre', concat(d.nombre, ' ', d.apellido_paterno, ' ', d.apellido_materno)
+                ) AS operator
+            FROM updated_trip t
+            LEFT JOIN public.drivers d
+            ON d.id_operador = t.idoperador;
+            `,
             [data.tripId, data.idoperador, data.pickupCode]
         );
 
@@ -322,5 +339,153 @@ export class TripRepository implements ITripRepository {
         );
 
         return result.rows;
+    }
+
+    async getActivePassengerTrip(passengerId: string) {
+        const query = `
+            SELECT
+                t.id,
+                t.passenger_id AS "passengerId",
+                t.idoperador AS "idOperador",
+                t.origin,
+                t.destination,
+                t.destination_address AS "destinationAddress",
+                t.distance_km AS "distanceKm",
+                t.fare,
+                t.trip_status_id AS "tripStatusId",
+                t.service_type_id AS "serviceTypeId",
+                t.requested_at AS "requestedAt",
+                t.accepted_at AS "acceptedAt",
+                t.started_at AS "startedAt",
+                t.completed_at AS "completedAt",
+                t.pickup_code AS "pickupCode",
+                CASE
+                    WHEN o.id_operador IS NULL THEN NULL
+                    ELSE json_build_object(
+                        'idoperador', o.id_operador,
+                        'nombre', o.nombre
+                    )
+                END AS operator
+            FROM public.trips t
+            LEFT JOIN public.drivers o
+                ON o.id_operador = t.idoperador
+            WHERE t.passenger_id = $1
+              AND t.trip_status_id IN (1, 2, 3)
+            ORDER BY t.requested_at DESC
+            LIMIT 1;
+        `;
+
+        const result = await this.db.query(query, [passengerId]);
+
+        return result.rows[0] ?? null;
+    }
+
+    async getActiveDriverTrip(operadorId: string) {
+        const query = `
+            SELECT
+                t.id,
+                t.passenger_id AS "passengerId",
+                t.idoperador AS "idOperador",
+                t.origin,
+                t.destination,
+                t.destination_address AS "destinationAddress",
+                t.distance_km AS "distanceKm",
+                t.fare,
+                t.trip_status_id AS "tripStatusId",
+                t.service_type_id AS "serviceTypeId",
+                t.requested_at AS "requestedAt",
+                t.accepted_at AS "acceptedAt",
+                t.started_at AS "startedAt",
+                t.completed_at AS "completedAt",
+                t.pickup_code AS "pickupCode",
+                CASE
+                    WHEN o.id_operador IS NULL THEN NULL
+                    ELSE json_build_object(
+                        'idoperador', o.id_operador,
+                        'nombre', o.nombre
+                    )
+                END AS operator
+            FROM public.trips t
+            LEFT JOIN public.drivers o
+                ON o.id_operador = t.idoperador
+            WHERE t.idoperador = $1
+              AND t.trip_status_id IN (1, 2, 3)
+            ORDER BY t.requested_at DESC
+            LIMIT 1;
+        `;
+
+        const result = await this.db.query(query, [operadorId]);
+
+        return result.rows[0] ?? null;
+    }
+
+
+    async getRequestedTrips() {
+        const query = `
+            SELECT
+                id,
+                passenger_id AS "passengerId",
+                idoperador AS "idOperador",
+                origin,
+                destination,
+                destination_address AS "destinationAddress",
+                distance_km AS "distanceKm",
+                fare,
+                trip_status_id AS "tripStatusId",
+                service_type_id AS "serviceTypeId",
+                requested_at AS "requestedAt",
+                accepted_at AS "acceptedAt",
+                started_at AS "startedAt",
+                completed_at AS "completedAt",
+                cancelled_at AS "cancelledAt",
+                pickup_code AS "pickupCode"
+            FROM public.trips
+            WHERE trip_status_id = 1
+              AND idoperador IS NULL
+            ORDER BY requested_at ASC;
+        `;
+
+        const result = await this.db.query(query);
+
+        return result.rows;
+    }
+
+    async cancelTrip(data: {
+        tripId: string;
+        passengerId: string;
+    }) {
+        const query = `
+            UPDATE public.trips
+            SET
+                trip_status_id = 5,
+                cancelled_at = now()
+            WHERE id = $1
+              AND passenger_id = $2
+              AND trip_status_id IN (1, 2, 3)
+            RETURNING
+                id,
+                passenger_id AS "passengerId",
+                idoperador AS "idOperador",
+                origin,
+                destination,
+                destination_address AS "destinationAddress",
+                distance_km AS "distanceKm",
+                fare,
+                trip_status_id AS "tripStatusId",
+                service_type_id AS "serviceTypeId",
+                requested_at AS "requestedAt",
+                accepted_at AS "acceptedAt",
+                started_at AS "startedAt",
+                completed_at AS "completedAt",
+                cancelled_at AS "cancelledAt",
+                pickup_code AS "pickupCode";
+        `;
+
+        const result = await this.db.query(query, [
+            data.tripId,
+            data.passengerId,
+        ]);
+
+        return result.rows[0] ?? null;
     }
 }

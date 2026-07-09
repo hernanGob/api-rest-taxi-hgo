@@ -12,6 +12,10 @@ export const socketRooms = {
     chat: (chatId: string | number) => `chat:${chatId}`,
 
     conversationsSupport: () => `conversations-support`,
+
+    availableTrips: () => 'trips:available',
+
+    trip: (tripId: string) => `trip:${tripId}`,
 };
 
 export function joinUserRooms(socket: AuthenticatedSocket) {
@@ -35,5 +39,9 @@ export function joinUserRooms(socket: AuthenticatedSocket) {
 
     if (user.rol === 'super_admin' || user.rol === "admin") {
         socket.join(socketRooms.conversationsSupport());
+    }
+
+    if (user.type === "driver") {
+        socket.join(socketRooms.availableTrips());
     }
 }

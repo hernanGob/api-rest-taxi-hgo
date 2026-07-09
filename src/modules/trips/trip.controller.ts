@@ -278,4 +278,82 @@ export class TripController {
             });
         }
     }
+
+    async getActivePassengerTrip(req: Request, res: Response) {
+        try {
+            const { passengerId } = req.params;
+
+            const result = await this.tripService.getActivePassengerTrip(passengerId as string);
+
+            return res.status(200).json({
+                status: "success",
+                msg: "Viaje activo obtenido correctamente",
+                data: result,
+            });
+        } catch (error) {
+            return res.status(400).json({
+                status: "error",
+                msg: error instanceof Error ? error.message : "No se pudo obtener el viaje activo",
+            });
+        }
+    }
+
+    async getActiveDriverTrip(req: Request, res: Response) {
+        try {
+            const { operadorId } = req.params;
+
+            const result = await this.tripService.getActiveDriverTrip(operadorId as string);
+
+            return res.status(200).json({
+                status: "success",
+                msg: "Viaje activo obtenido correctamente",
+                data: result,
+            });
+        } catch (error) {
+            return res.status(400).json({
+                status: "error",
+                msg: error instanceof Error ? error.message : "No se pudo obtener el viaje activo",
+            });
+        }
+    }
+
+    async cancelTrip(req: Request, res: Response) {
+        try {
+            const { tripId } = req.params;
+            const { passengerId } = req.body;
+
+            const result = await this.tripService.cancelTrip({
+                tripId: tripId as string,
+                passengerId,
+            });
+
+            return res.status(200).json({
+                status: "success",
+                msg: "Viaje cancelado correctamente",
+                data: result,
+            });
+        } catch (error) {
+            return res.status(400).json({
+                status: "error",
+                msg: error instanceof Error ? error.message : "No se pudo cancelar el viaje",
+            });
+        }
+    }
+
+    async getRequestedTrips(req: Request, res: Response) {
+        try {
+            const result = await this.tripService.getRequestedTrips();
+
+            return res.status(200).json({
+                status: "success",
+                msg: "Viajes disponibles obtenidos correctamente",
+                data: result,
+            });
+        } catch (error) {
+            return res.status(400).json({
+                status: "error",
+                msg: error instanceof Error ? error.message : "No se pudieron obtener los viajes",
+            });
+        }
+    }
 }

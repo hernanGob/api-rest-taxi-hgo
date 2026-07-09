@@ -4,6 +4,7 @@ import type { CreateTripDto } from "./trip.types.js";
 import { mapTripForApp } from "./trip.mapper.js";
 import type { GeoService } from "../geo/geo.service.js";
 import { mapOperatorTripHistoryForApp } from "./tripHistoryOperator.mapper.js";
+import { emitToAvailableTrips, emitToTrip } from "../../socket/socket.service.js";
 
 export class TripService {
     constructor(
@@ -21,6 +22,29 @@ export class TripService {
         if (!result) {
             throw new Error("No se pudo solicitar el viaje");
         }
+
+        emitToAvailableTrips("new-trip", {
+            id: result.id,
+            passengerId: result.passengerId,
+            idOperador: result.idOperador,
+
+            origin: result.origin,
+            destination: result.destination,
+            destinationAddress: result.destinationAddress,
+
+            distanceKm: result.distanceKm,
+            fare: result.fare,
+
+            tripStatusId: result.tripStatusId,
+            serviceTypeId: result.serviceTypeId,
+
+            requestedAt: result.requestedAt,
+            acceptedAt: result.acceptedAt,
+            startedAt: result.startedAt,
+            completedAt: result.completedAt,
+
+            pickupCode: result.pickupCode,
+        });
 
         return result;
     }
@@ -92,6 +116,21 @@ export class TripService {
         if (!result) {
             throw new Error("No se pudo aceptar el viaje");
         }
+
+        emitToAvailableTrips('trip-taken', {
+            id: result.id,
+            idOperador: result.idOperador,
+            tripStatusId: result.tripStatusId,
+        });
+
+        emitToTrip(result.id, "trip-accepted", {
+            id: result.id,
+            idOperador: result.idOperador,
+            tripStatusId: result.tripStatusId,
+            acceptedAt: result.acceptedAt,
+            pickupCode: result.pickupCode,
+            operator: result.operator,
+        });
 
         return result;
     }
@@ -229,5 +268,41 @@ export class TripService {
         );
 
         return trips;
+    }
+
+    async getActivePassengerTrip(passengerId: string) {
+        return await this.tripRepository.getActivePassengerTrip(passengerId);
+    }
+
+    async getActiveDriverTrip(operadorId: string) {
+        return await this.tripRepository.getActiveDriverTrip(operadorId);
+    }
+
+    async cancelTrip(data: {
+        tripId: string;
+        passengerId: string;
+    }) {
+        const result = await this.tripRepository.cancelTrip(data);
+
+        if (!result) {
+            throw new Error("No se pudo cancelar el viaje o el viaje ya no está disponible");
+        }
+
+        emitToTrip(result.id, "trip-cancelled", {
+            id: result.id,
+            tripStatusId: result.tripStatusId,
+            cancelledAt: result.cancelledAt,
+        });
+
+        emitToAvailableTrips("trip-cancelled", {
+            id: result.id,
+            tripStatusId: result.tripStatusId,
+        });
+
+        return result;
+    }
+
+    async getRequestedTrips() {
+        return await this.tripRepository.getRequestedTrips();
     }
 }

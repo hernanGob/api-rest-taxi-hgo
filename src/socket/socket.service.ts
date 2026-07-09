@@ -57,10 +57,27 @@ export function emitToChat<TPayload>(
 }
 
 export function emitToSupportRoom<TPayload>(
-  event: string,
-  payload: TPayload
+    event: string,
+    payload: TPayload
 ) {
-  getSocketServer()
-    .to(socketRooms.conversationsSupport())
-    .emit(event, payload);
+    getSocketServer()
+        .to(socketRooms.conversationsSupport())
+        .emit(event, payload);
+}
+
+export function emitToAvailableTrips<TPayload>(
+    event: string,
+    payload: TPayload
+) {
+    getSocketServer()
+        .to(socketRooms.availableTrips())
+        .emit(event, payload);
+}
+
+export function emitToTrip<TPayload>(
+    tripId: string,
+    event: string,
+    payload: TPayload
+) {
+    getSocketServer().to(socketRooms.trip(tripId)).emit(event, payload);
 }

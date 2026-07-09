@@ -54,4 +54,22 @@ export class DriverAuthController {
             next(error);
         }
     }
+
+    session(req: Request, res: Response, next: NextFunction) {
+        try {
+            const user = req.user;
+
+            if (!user) {
+                return res.status(404).json({
+                    status: 'invalid',
+                });
+            }
+
+            return res.status(200).json({
+                status: 'success',
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
 }

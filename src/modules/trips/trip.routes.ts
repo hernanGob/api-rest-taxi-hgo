@@ -14,10 +14,10 @@ export const TripRoutes = (tripController: TripController) => {
         tripController.createTrip.bind(tripController)
     );
 
-    router.get(
+    /* router.get(
         "/driver/requested",
         tripController.listRequestedTripsForDriver.bind(tripController)
-    );
+    ); */
 
     router.patch(
         "/:id/accept",
@@ -59,6 +59,26 @@ export const TripRoutes = (tripController: TripController) => {
     );
 
     router.post("/:id/rate-driver", authenticateOperador, tripController.rateTripOperator.bind(tripController));
+
+    router.get(
+        "/passenger/:passengerId/active",
+        tripController.getActivePassengerTrip.bind(tripController)
+    );
+
+    router.get(
+        "/driver/:operadorId/active",
+        tripController.getActiveDriverTrip.bind(tripController)
+    );
+
+    router.patch(
+        "/:tripId/cancel",
+        tripController.cancelTrip.bind(tripController)
+    );
+
+    router.get(
+        "/driver/requested",
+        tripController.getRequestedTrips.bind(tripController)
+    );
 
     return router;
 };

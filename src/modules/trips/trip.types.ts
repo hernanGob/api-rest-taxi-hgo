@@ -28,6 +28,11 @@ export interface Trip {
     driverRating: number | null;
     passengerComment: string | null;
     driverComment: string | null;
+    operator: {
+        idoperador: number;
+        nombre: string;
+        telefono: string;
+    } | null;
 }
 
 export interface CreateTripDto {

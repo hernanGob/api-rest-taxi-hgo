@@ -265,6 +265,7 @@ export const trips = pgTable(
 
         pickupCode: varchar("pickup_code", { length: 5 }),
         acceptedAt: timestamp("accepted_at", { withTimezone: false }),
+        cancelled_at: timestamp("cancelled_at", { withTimezone: false }),
     },
     (t) => [
         index("trips_passenger_id_idx").on(t.passengerId),
