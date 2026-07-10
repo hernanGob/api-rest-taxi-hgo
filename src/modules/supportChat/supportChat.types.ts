@@ -11,6 +11,15 @@ export interface SupportConversation {
     createdAt: string;
 }
 
+export interface Conversation {
+    id: string;
+    passengerName: string;
+    status: SupportConversationStatus;
+    updatedAt: string;
+    closedAt: string | null;
+    createdAt: string;
+}
+
 export interface SupportMessage {
     id: string;
     conversationId: string;
@@ -47,7 +56,7 @@ export interface ISupportChatRepository {
 
     findPassengerConversations(passengerId: string): Promise<SupportConversation[]>;
 
-    findAllConversations(): Promise<SupportConversation[]>;
+    findAllConversations(): Promise<Conversation[]>;
 
     updateConversationStatus(
         id: string,

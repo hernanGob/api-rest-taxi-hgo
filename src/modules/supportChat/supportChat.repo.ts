@@ -1,5 +1,6 @@
 import type { Pool } from "pg";
 import type {
+    Conversation,
     ISupportChatRepository,
     SupportConversation,
     SupportConversationStatus,
@@ -123,23 +124,33 @@ export class SupportChatRepository implements ISupportChatRepository {
         return result.rows.map(mapConversation);
     }
 
-    async findAllConversations(): Promise<SupportConversation[]> {
-        const result = await this.db.query<SupportConversationRow>(
+    async findAllConversations(): Promise<Conversation[]> {
+        const result = await this.db.query(
             `
-      SELECT
-        id,
-        passenger_id,
-        assigned_admin_id,
-        status,
-        updated_at,
-        closed_at,
-        created_at
-      FROM public.support_conversations
-      ORDER BY updated_at DESC;
-      `
+            select
+                sc.id as "id",
+                concat(p."name",' ', p.paternal_surname, ' ', p.maternal_surname) as "passenger_name",
+                sc.status as "status",
+                sc.updated_at as "updated_at",
+                sc.closed_at as "closed_at",
+                sc.created_at as "created_at"
+            from
+                public.support_conversations sc
+            join public.passenger p on p.id = sc.passenger_id
+            order by
+                updated_at desc;`
         );
 
-        return result.rows.map(mapConversation);
+        return result.rows.map((item, _index) => {
+            return {
+                id: item.id,
+                passengerName: item.passenger_name,
+                status: item.status,
+                createdAt: item.created_at,
+                closedAt: item.closed_at,
+                updatedAt: item.updated_at,
+            }
+        })
     }
 
     async updateConversationStatus(
