@@ -15,13 +15,17 @@ module.exports = {
     apps: [
         {
             name: "taxi-hgo-api-dev-3011",
-            script: "npm",
-            args: ["run", "start"],
+            script: "./dist/server.js",
             exec_mode: "cluster",
-            max_memory_restart: "700M",
-            autorestart: true,
             instances: 4,
-            watch: false
+            autorestart: true,
+            watch: false,
+            max_memory_restart: "700M",
+            watch: false,
+            error_file: "./logs/api-error.log",
+            out_file: "./logs/api-out.log",
+            merge_logs: true,
+            time: true
         }
     ]
 };
