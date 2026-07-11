@@ -21,7 +21,6 @@ module.exports = {
             autorestart: true,
             watch: false,
             max_memory_restart: "700M",
-            watch: false,
             error_file: "./logs/api-error.log",
             out_file: "./logs/api-out.log",
             merge_logs: true,
