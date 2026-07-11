@@ -18,7 +18,7 @@ module.exports = {
             cwd: __dirname,
             script: "./dist/server.js",
             exec_mode: "cluster",
-            instances: 2,
+            instances: 4,
             autorestart: true,
             watch: false,
             max_memory_restart: "700M",
