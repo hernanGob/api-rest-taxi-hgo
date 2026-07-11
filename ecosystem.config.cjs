@@ -1,4 +1,4 @@
-/* module.exports = {
+module.exports = {
     apps: [
         {
             name: "taxi-hgo-api-dev-3011",
@@ -9,9 +9,9 @@
             watch: false
         }
     ]
-}; */
+};
 
-module.exports = {
+/* module.exports = {
     apps: [
         {
             name: "taxi-hgo-api-dev-3011",
@@ -28,4 +28,4 @@ module.exports = {
             time: true
         }
     ]
-};
+}; */
