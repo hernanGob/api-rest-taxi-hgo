@@ -15,9 +15,10 @@ module.exports = {
     apps: [
         {
             name: "taxi-hgo-api-dev-3011",
+            cwd: __dirname,
             script: "./dist/server.js",
-            exec_mode: "cluster",
-            instances: 4,
+            exec_mode: "fork",
+            instances: 1,
             autorestart: true,
             watch: false,
             max_memory_restart: "700M",
