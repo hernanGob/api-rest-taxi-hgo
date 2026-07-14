@@ -4,6 +4,7 @@ import type {
     CreateTripDto,
     ITripRepository,
     Trip,
+    TripCreated,
     TripPoint,
     TripsForDashboard,
 } from "./trip.types.js";
@@ -66,8 +67,8 @@ const mapTrip = (row: TripRow): Trip => ({
 export class TripRepository implements ITripRepository {
     constructor(private readonly db: Pool) { }
 
-    async createTrip(data: CreateTripDto): Promise<Trip | null> {
-        const result = await this.db.query<TripRow>(
+    async createTrip(data: CreateTripDto): Promise<TripCreated | null> {
+        const result = await this.db.query(
             `
       INSERT INTO public.trips
         (
@@ -79,10 +80,11 @@ export class TripRepository implements ITripRepository {
           distance_km,
           fare,
           service_type_id,
-          pricing_config_id
+          pricing_config_id,
+          route_to_destination_path
         )
       VALUES
-        ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
       RETURNING *;
       `,
             [
@@ -95,12 +97,38 @@ export class TripRepository implements ITripRepository {
                 data.fare,
                 data.serviceTypeId,
                 data.pricingConfigId ?? null,
+                JSON.stringify(data.destinationRoutePath),
             ]
         );
 
         const row = result.rows[0];
 
-        return row ? mapTrip(row) : null;
+        return row ? {
+            id: row.id,
+            passengerId: row.passenger_id,
+            idOperador: row.idoperador,
+            origin: row.origin,
+            destination: row.destination,
+            destinationAddress: row.destination_address,
+            distanceKm: row.distance_km,
+            fare: row.fare,
+            tripStatusId: row.trip_status_id,
+            serviceTypeId: row.service_type_id,
+            requestedAt: row.requested_at,
+            startedAt: row.started_at,
+            completedAt: row.completed_at,
+            durationMinutes: row.duration_minutes,
+            pricingConfigId: row.pricing_config_id,
+            passengerRating: row.passenger_rating,
+            driverRating: row.driver_rating,
+            passengerComment: row.passenger_comment,
+            driverComment: row.driver_comment,
+            acceptedAt: row.accepted_at,
+            pickupCode: row.pickup_code,
+            operator: row.operator,
+            destinationRoutePath: row.route_to_destination_path,
+        } : null;
+
     }
 
     async findTripById(id: string): Promise<Trip | null> {
@@ -365,7 +393,8 @@ export class TripRepository implements ITripRepository {
                         'idoperador', o.id_operador,
                         'nombre', o.nombre
                     )
-                END AS operator
+                END AS operator,
+                t.route_to_destination_path
             FROM public.trips t
             LEFT JOIN public.drivers o
                 ON o.id_operador = t.idoperador
@@ -404,7 +433,8 @@ export class TripRepository implements ITripRepository {
                         'idoperador', o.id_operador,
                         'nombre', o.nombre
                     )
-                END AS operator
+                END AS operator,
+                t.route_to_destination_path
             FROM public.trips t
             LEFT JOIN public.drivers o
                 ON o.id_operador = t.idoperador

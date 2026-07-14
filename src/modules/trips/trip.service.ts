@@ -2,7 +2,7 @@ import validator from "validator";
 import type { TripRepository } from "./trip.repo.js";
 import type { CreateTripDto } from "./trip.types.js";
 import { mapTripForApp } from "./trip.mapper.js";
-import type { GeoService } from "../geo/geo.service.js";
+import { GeoService } from "../geo/geo.service.js";
 import { mapOperatorTripHistoryForApp } from "./tripHistoryOperator.mapper.js";
 import { emitToAvailableTrips, emitToTrip } from "../../socket/socket.service.js";
 
@@ -16,8 +16,22 @@ export class TripService {
         return String(Math.floor(10000 + Math.random() * 90000));
     }
 
-    async createTrip(data: CreateTripDto) {
-        const result = await this.tripRepository.createTrip(data);
+    async createTrip(data: any) {
+        const DestinationRoutePath = await this.geoService.getRouteInfo(
+            {
+                originLat: data.origin.lat,
+                originLng: data.origin.lng,
+                destLat: data.destination.lat,
+                destLng: data.destination.lng,
+            }
+        )
+
+        let dataNewTrip = {
+            ...data,
+            destinationRoutePath: DestinationRoutePath.path,
+        }
+
+        const result = await this.tripRepository.createTrip(dataNewTrip);
 
         if (!result) {
             throw new Error("No se pudo solicitar el viaje");
@@ -44,6 +58,7 @@ export class TripService {
             completedAt: result.completedAt,
 
             pickupCode: result.pickupCode,
+            routeToDestinationPath: result.destinationRoutePath,
         });
 
         return result;

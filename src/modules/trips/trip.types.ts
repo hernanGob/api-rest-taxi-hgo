@@ -35,6 +35,41 @@ export interface Trip {
     } | null;
 }
 
+export interface TripCreated {
+    id: string;
+    passengerId: string;
+    idOperador: number | null;
+    origin: TripPoint;
+    destination: TripPoint;
+    destinationAddress: string;
+    distanceKm: string;
+    fare: string;
+    tripStatusId: number;
+    serviceTypeId: number;
+    requestedAt: string | null;
+    acceptedAt: string | null;
+    startedAt: string | null;
+    completedAt: string | null;
+    pickupCode: string | null;
+    durationMinutes: number;
+    pricingConfigId: string | null;
+    passengerRating: number | null;
+    driverRating: number | null;
+    passengerComment: string | null;
+    driverComment: string | null;
+    operator: {
+        idoperador: number;
+        nombre: string;
+        telefono: string;
+    } | null;
+    destinationRoutePath: coords[]
+}
+
+export type coords = {
+    latitude: number;
+    longitude: number;
+}
+
 export interface CreateTripDto {
     passengerId: string;
     origin: TripPoint;
@@ -44,6 +79,7 @@ export interface CreateTripDto {
     fare: number;
     serviceTypeId: number;
     pricingConfigId?: string | null;
+    destinationRoutePath: coords[]
 }
 
 export interface TripRow {
@@ -112,7 +148,7 @@ export interface TripsForDashboard {
 
 
 export interface ITripRepository {
-    createTrip(data: CreateTripDto): Promise<Trip | null>;
+    createTrip(data: CreateTripDto): Promise<TripCreated | null>;
     findTripById(id: string): Promise<Trip | null>;
     listTripsByPassenger(passengerId: string): Promise<Trip[]>;
     listTripHistoryByPassenger(passengerId: string): Promise<TripRow[]>;

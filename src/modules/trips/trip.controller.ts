@@ -21,7 +21,7 @@ export class TripController {
                 });
             }
 
-            const data: CreateTripDto = {
+            const data = {
                 passengerId: String(body.passengerId),
                 origin: {
                     lat: Number(body.origin.lat),

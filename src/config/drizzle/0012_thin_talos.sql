@@ -1,0 +1,1 @@
+ALTER TABLE "trips" ADD COLUMN "route_to_destination_path" jsonb;

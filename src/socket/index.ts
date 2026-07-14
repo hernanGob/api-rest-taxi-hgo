@@ -21,6 +21,19 @@ const latestOperatorLocationsByTrip = new Map<
     }
 >();
 
+const latestPassengerLocationsByTrip = new Map<
+    string,
+    {
+        tripId: string;
+        passengerId?: string;
+        location: {
+            latitude: number;
+            longitude: number;
+        };
+        updatedAt: string;
+    }
+>();
+
 export function initializeSocket(server: HttpServer) {
     const io = new Server(server, {
         path: "/socket.io",
@@ -125,7 +138,7 @@ export function initializeSocket(server: HttpServer) {
             socket.join(room);
 
             const latestLocation = latestOperatorLocationsByTrip.get(String(tripId));
-            if(latestLocation) {
+            if (latestLocation) {
                 socket.emit("operator-location", latestLocation);
             }
 
@@ -133,6 +146,13 @@ export function initializeSocket(server: HttpServer) {
                 tripId,
                 room,
             });
+
+            const latestPassengerLocation =
+                latestPassengerLocationsByTrip.get(String(tripId));
+
+            if (latestPassengerLocation) {
+                socket.emit("passenger-location", latestPassengerLocation);
+            }
         });
 
         socket.on("leave-trip", (tripId: string) => {
@@ -146,7 +166,36 @@ export function initializeSocket(server: HttpServer) {
             });
         });
 
-        /* UBICACION DEL OPERADOR */
+        /* UBICACION DEL OPERADOR y PASAJERO */
+        socket.on("passenger-location", (payload) => {
+            const tripId = String(payload?.tripId ?? "");
+
+            const latitude = Number(payload?.location?.latitude);
+            const longitude = Number(payload?.location?.longitude);
+
+            if (!tripId || !Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+                socket.emit("socket-error", {
+                    message: "Ubicación de pasajero inválida",
+                });
+                return;
+            }
+
+            const data = {
+                tripId,
+                passengerId: user.sub,
+                location: {
+                    latitude,
+                    longitude,
+                },
+                updatedAt: new Date().toISOString(),
+            };
+
+            latestPassengerLocationsByTrip.set(tripId, data);
+
+
+            io.to(socketRooms.trip(tripId)).emit("passenger-location", data);
+        });
+
         socket.on("operator-location", (payload) => {
             if (user.type !== "driver") return;
 

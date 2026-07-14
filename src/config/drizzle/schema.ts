@@ -215,6 +215,11 @@ export const tripStatus = pgTable(
 );
 
 /* ===================== TRIPS ===================== */
+type RoutePoint = {
+    latitude: number;
+    longitude: number;
+};
+
 export const trips = pgTable(
     "trips",
     {
@@ -233,6 +238,7 @@ export const trips = pgTable(
 
         distanceKm: numeric("distance_km", { precision: 10, scale: 2 }).notNull(),
         fare: numeric("fare", { precision: 10, scale: 2 }).notNull(),
+        routeToDestinationPath: jsonb('route_to_destination_path').$type<RoutePoint[]>(),
 
         tripStatusId: integer("trip_status_id")
             .notNull()
