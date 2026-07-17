@@ -2,12 +2,12 @@ import { createApp } from "./app.js";
 import { config } from "./config/config.js";
 import http from 'http';
 import { initializeSocket } from "./socket/index.js";
-//import { connectRedis } from "./shared/redis/redis.client.js";
+import { connectRedis } from "./shared/redis/redis.client.js";
 
 const main = async () => {
 
     try {
-        //await connectRedis();
+        await connectRedis();
 
         const app = createApp();
         const httpServer = http.createServer(app);
