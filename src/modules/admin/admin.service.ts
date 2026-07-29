@@ -29,6 +29,7 @@ import type {
 import type {
     AdminRedisRepository,
 } from "./admin.redis.repository.js";
+import { AppError } from "../../shared/errors/appError.js";
 
 type AdminTempTokenPayload = {
     sub: string;
@@ -88,8 +89,10 @@ export class UserService {
                     1,
                 );
 
-            throw new Error(
+            throw new AppError(
                 `Demasiados intentos fallidos. Intenta nuevamente en ${remainingMinutes} minuto${remainingMinutes === 1 ? "" : "s"}`,
+                429,
+                "too_many_attempts",
             );
         }
 
@@ -103,15 +106,22 @@ export class UserService {
                     email,
                 );
 
-            throw new Error(
+            throw new AppError(
                 "Correo electrónico o contraseña incorrectos",
+                401,
+                "invalid_credentials",
             );
         }
 
         if (!user.passwordHash) {
-            throw new Error(
+            throw new AppError(
                 "El usuario no tiene contraseña registrada",
+                401,
+                "invalid_credentials",
             );
+            /* throw new Error(
+                "El usuario no tiene contraseña registrada",
+            ); */
         }
 
         const validPassword =
@@ -128,8 +138,10 @@ export class UserService {
                     );
 
             if (attemptResult.blocked) {
-                throw new Error(
+                throw new AppError(
                     "La cuenta fue bloqueada temporalmente por demasiados intentos fallidos",
+                    429,
+                    "too_many_attempts",
                 );
             }
 
@@ -140,8 +152,10 @@ export class UserService {
                     0,
                 );
 
-            throw new Error(
+            throw new AppError(
                 `Correo electrónico o contraseña incorrectos. Intentos restantes: ${remainingAttempts}`,
+                401,
+                "invalid_credentials",
             );
         }
 

@@ -12,6 +12,8 @@ import rateLimit from 'express-rate-limit';
 import hpp from 'hpp';
 import compression from 'compression';
 import { buildContainer } from './modules/container.js';
+import { AppError } from './shared/errors/appError.js';
+import { errorHandler } from './middleware/errorHandler.js';
 
 
 export const createApp = () => {
@@ -105,7 +107,8 @@ export const createApp = () => {
         });
     });
 
-    app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+
+    /* app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
         console.error(err);
 
         const isProduction = process.env.NODE_ENV === 'production';
@@ -116,7 +119,9 @@ export const createApp = () => {
                 ? 'Error interno del servidor'
                 : err.message || "Error interno del servidor",
         });
-    });
+    }); */
+
+    app.use(errorHandler);
 
     return app;
 }
