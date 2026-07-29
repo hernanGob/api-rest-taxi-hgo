@@ -11,3 +11,14 @@ export interface TokenPayload {
 export type AuthenticatedSocket = Socket & {
     user?: TokenPayload;
 };
+
+export type LocationPayload = {
+    tripId: string;
+    operatorId?: number | undefined;
+    passengerId?: string | undefined;
+    location: {
+        latitude: number;
+        longitude: number;
+    };
+    updatedAt: string;
+};

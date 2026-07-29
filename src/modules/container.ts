@@ -1,5 +1,7 @@
 import pool from "../config/db.js";
+import { redisClient } from "../shared/redis/redis.client.js";
 import { UserController } from "./admin/admin.controller.js";
+import { AdminRedisRepository } from "./admin/admin.redis.repository.js";
 import { UserRepository } from "./admin/admin.repo.js";
 import { UserRoutes } from "./admin/admin.routes.js";
 import { UserService } from "./admin/admin.service.js";
@@ -65,7 +67,8 @@ export const buildContainer = () => {
     const driverRoutes = DriverRoutes(driverController);
 
     const userRepository = new UserRepository(pool);
-    const userService = new UserService(userRepository);
+    const userRedisRepository = new AdminRedisRepository(redisClient);
+    const userService = new UserService(userRepository, userRedisRepository);
     const userController = new UserController(userService);
     const userRoutes = UserRoutes(userController);
 

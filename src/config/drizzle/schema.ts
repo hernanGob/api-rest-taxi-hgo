@@ -172,18 +172,27 @@ export const user = pgTable(
 
         passwordHash: text("password_hash"),
 
-        /* emailVerified: boolean("email_verified").default(false).notNull(),
-        codeHash: text("code_hash").default("").notNull(),
-        nonce: text("nonce").default("").notNull(),
-        expiresAt: timestamp("expires_at", { withTimezone: false }),
-
-        isDeleted: boolean("is_deleted").default(false).notNull(), */
-
         createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
         updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 
         userRoleId: uuid("user_role_id").references(() => userRole.id, {
             onDelete: "set null",
+        }),
+
+        twoFactorEnabled: boolean("two_factor_enabled")
+            .notNull()
+            .default(false),
+
+        /*
+        * Contiene el secreto temporal durante la configuración
+        * y el secreto definitivo después de verificarlo.
+        *
+        * En producción conviene almacenarlo cifrado.
+        */
+        twoFactorSecret: text("two_factor_secret"),
+
+        twoFactorEnabledAt: timestamp("two_factor_enabled_at", {
+            withTimezone: true,
         }),
     },
     (t) => [

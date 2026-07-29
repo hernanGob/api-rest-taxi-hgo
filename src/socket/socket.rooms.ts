@@ -23,7 +23,7 @@ export function joinUserRooms(socket: AuthenticatedSocket) {
 
     if (!user) return;
 
-    /* socket.join(socketRooms.user(user.sub)); */
+    socket.join(socketRooms.user(user.sub));
 
     if (user.type) {
         socket.join(socketRooms.type(user.type));

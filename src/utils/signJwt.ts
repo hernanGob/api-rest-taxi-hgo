@@ -3,6 +3,7 @@ import { config } from "../config/config.js";
 
 export interface TokenPayload {
     sub: string;
+    sid?: string;
     rol?: string | null;
     area_id?: number;
     type?: "user" | "driver" | "passenger";

@@ -4,7 +4,8 @@ import type { CreateTripDto } from "./trip.types.js";
 import { mapTripForApp } from "./trip.mapper.js";
 import { GeoService } from "../geo/geo.service.js";
 import { mapOperatorTripHistoryForApp } from "./tripHistoryOperator.mapper.js";
-import { emitToAvailableTrips, emitToTrip } from "../../socket/socket.service.js";
+import { emitToAvailableTrips, emitToOperator, emitToTrip } from "../../socket/socket.service.js";
+import { findNearbyOperators } from "../location/location.service.js";
 
 export class TripService {
     constructor(
@@ -17,49 +18,127 @@ export class TripService {
     }
 
     async createTrip(data: any) {
-        const DestinationRoutePath = await this.geoService.getRouteInfo(
-            {
+
+        const routeInfo =
+            await this.geoService.getRouteInfo({
                 originLat: data.origin.lat,
                 originLng: data.origin.lng,
                 destLat: data.destination.lat,
                 destLng: data.destination.lng,
-            }
-        )
+            });
 
-        let dataNewTrip = {
+
+        const dataNewTrip = {
             ...data,
-            destinationRoutePath: DestinationRoutePath.path,
-        }
+            destinationRoutePath: routeInfo.path,
+        };
 
-        const result = await this.tripRepository.createTrip(dataNewTrip);
+
+        const result =
+            await this.tripRepository.createTrip(
+                dataNewTrip
+            );
+
 
         if (!result) {
-            throw new Error("No se pudo solicitar el viaje");
+            throw new Error(
+                "No se pudo solicitar el viaje"
+            );
         }
 
-        emitToAvailableTrips("new-trip", {
+        const tripPayload = {
+
             id: result.id,
-            passengerId: result.passengerId,
-            idOperador: result.idOperador,
 
-            origin: result.origin,
-            destination: result.destination,
-            destinationAddress: result.destinationAddress,
+            passengerId:
+                result.passengerId,
 
-            distanceKm: result.distanceKm,
-            fare: result.fare,
+            idOperador:
+                result.idOperador,
 
-            tripStatusId: result.tripStatusId,
-            serviceTypeId: result.serviceTypeId,
 
-            requestedAt: result.requestedAt,
-            acceptedAt: result.acceptedAt,
-            startedAt: result.startedAt,
-            completedAt: result.completedAt,
+            origin:
+                result.origin,
 
-            pickupCode: result.pickupCode,
-            routeToDestinationPath: result.destinationRoutePath,
-        });
+            destination:
+                result.destination,
+
+
+            destinationAddress:
+                result.destinationAddress,
+
+
+            distanceKm:
+                result.distanceKm,
+
+
+            fare:
+                result.fare,
+
+
+            tripStatusId:
+                result.tripStatusId,
+
+
+            serviceTypeId:
+                result.serviceTypeId,
+
+
+            requestedAt:
+                result.requestedAt,
+
+
+            acceptedAt:
+                result.acceptedAt,
+
+
+            startedAt:
+                result.startedAt,
+
+
+            completedAt:
+                result.completedAt,
+
+
+            pickupCode:
+                result.pickupCode,
+
+
+            routeToDestinationPath:
+                result.destinationRoutePath,
+
+        };
+
+        /**
+         * Buscar operadores cercanos
+         */
+        const nearbyDrivers =
+            await findNearbyOperators(
+                data.origin.lat,
+                data.origin.lng,
+                2
+            );
+
+        console.log(
+            "Operadores cercanos:",
+            nearbyDrivers
+        );
+
+        /**
+         * Enviar solamente a operadores cercanos
+         */
+        for (
+            const operatorId of nearbyDrivers
+        ) {
+
+            emitToOperator(
+                Number(operatorId),
+                "new-trip",
+                tripPayload
+            );
+
+        }
+
 
         return result;
     }

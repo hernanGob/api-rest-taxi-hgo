@@ -5,6 +5,13 @@ import { type TokenPayload } from "./socket.types.js";
 let ioInstance: Server | null = null;
 
 export function setSocketServer(io: Server) {
+    if (ioInstance) {
+        console.warn(
+            "[Socket] servidor ya esta inicializado"
+        );
+        return;
+    }
+
     ioInstance = io;
 }
 

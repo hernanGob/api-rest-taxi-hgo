@@ -5,6 +5,8 @@ export const redisClient = createClient({
     url: config.REDIS_URL,
 });
 
+export type AppRedisClient = typeof redisClient;
+
 redisClient.on('error', (error) => {
     console.error('Error en el cliente de Redis: ', error);
 });
@@ -23,4 +25,8 @@ export const disconnectRedis = async () => {
     if (redisClient.isOpen) {
         await redisClient.quit();
     }
+
+    console.log(
+        `[Redis] cliente general cerrado PID ${process.pid}`
+    );
 }

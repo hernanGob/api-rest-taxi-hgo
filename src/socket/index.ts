@@ -1,47 +1,34 @@
 import { Server as HttpServer } from "http";
 import { Server } from "socket.io";
 import { socketAuthMiddleware } from "./socketAuth.middleware.js";
-import { type AuthenticatedSocket } from "./socket.types.js";
+import { type AuthenticatedSocket, type LocationPayload } from "./socket.types.js";
 import { joinUserRooms, socketRooms } from "./socket.rooms.js";
 import { setSocketServer } from "./socket.service.js";
 import { config } from "../config/config.js";
+import { configureSocketIo } from "../shared/redis/socketRedisAdapter.js";
+import { getRedis, setRedis } from "../shared/redis/redis.services.js";
+import { saveOperatorLocation } from "../modules/location/location.redis.js";
 
 const CLIENT_URL = process.env.CLIENT_URL;
 
-const latestOperatorLocationsByTrip = new Map<
-    string,
-    {
-        tripId: string;
-        operatorId?: number;
-        location: {
-            latitude: number;
-            longitude: number;
-        },
-        updatedAt: string;
-    }
->();
-
-const latestPassengerLocationsByTrip = new Map<
-    string,
-    {
-        tripId: string;
-        passengerId?: string;
-        location: {
-            latitude: number;
-            longitude: number;
-        };
-        updatedAt: string;
-    }
->();
-
-export function initializeSocket(server: HttpServer) {
+export async function initializeSocket(server: HttpServer) {
     const io = new Server(server, {
         path: config.nodeEnv === 'production' ? "/taxi-hgo/socket.io" : "/socket.io",
         cors: {
             origin: CLIENT_URL,
             credentials: true,
         },
+
+        transports: [
+            "polling",
+            "websocket"
+        ],
     });
+
+    /**
+     * Redis Adapter para PM2 Cluster
+     */
+    await configureSocketIo(io);
 
     setSocketServer(io);
 
@@ -57,15 +44,22 @@ export function initializeSocket(server: HttpServer) {
 
         joinUserRooms(socket);
 
-        console.log(`Socket connected ${user.type || user.rol}:`, socket.id);
-        //console.log("Socket rooms:", Array.from(socket.rooms));
-        //console.log("JWT payload:", user);
+        console.log(
+            `[Socket] connected ${user.type || user.rol}`,
+            socket.id,
+            "PID:",
+            process.pid
+        );
+
 
         socket.emit("connected", {
             message: "Socket connected successfully",
             user,
         });
 
+        /* 
+            SOPORTE
+        */
         socket.on("join-support", () => {
             if (user.rol !== "admin" && user.rol !== "super_admin") {
                 socket.emit("socket-error", {
@@ -84,6 +78,9 @@ export function initializeSocket(server: HttpServer) {
             });
         });
 
+        /*
+            CHAT
+        */
         socket.on("join-chat", (chatId: string | number) => {
             const room = socketRooms.chat(chatId);
 
@@ -95,7 +92,9 @@ export function initializeSocket(server: HttpServer) {
             });
         });
 
-        // ===== TRIPS =====
+        /*
+            VIAJES DISPONIBLES
+        */
         socket.on("join-available-trips", () => {
 
             if (user.type !== "driver") {
@@ -105,54 +104,63 @@ export function initializeSocket(server: HttpServer) {
                 return;
             }
 
-            const roomsJoined: string[] = [];
-            const globalRoom = socketRooms.availableTrips();
-            socket.join(globalRoom);
-            roomsJoined.push(globalRoom);
+            const room = socketRooms.availableTrips();
+            socket.join(room);
 
             socket.emit("joined-available-trips", {
-                rooms: roomsJoined,
+                rooms: [
+                    room
+                ],
             });
         });
 
         socket.on("leave-available-trips", () => {
-            const roomsLeft: string[] = [];
-
-            const globalRoom = socketRooms.availableTrips();
-            socket.leave(globalRoom);
-            roomsLeft.push(globalRoom);
+            const room = socketRooms.availableTrips();
+            socket.leave(room);
 
             socket.emit("left-available-trips", {
-                rooms: roomsLeft,
+                rooms: [
+                    room
+                ],
             });
         });
 
-        socket.on('join-trip', (tripId: string) => {
+        /*
+            ENTRAR AL VIAJE
+        */
+        socket.on('join-trip', async (tripId: string) => {
             if (!tripId) {
                 socket.emit("socket-error", {
                     message: "ID de viaje inválido",
                 });
             }
 
+
             const room = socketRooms.trip(tripId);
             socket.join(room);
 
-            const latestLocation = latestOperatorLocationsByTrip.get(String(tripId));
-            if (latestLocation) {
-                socket.emit("operator-location", latestLocation);
+            /* Recuperar la ultima ubicación del operador */
+            const operatorLocation = await getRedis<LocationPayload>(
+                `trip:${tripId}:operator-location`
+            );
+
+            if (operatorLocation) {
+                socket.emit("operator-location", operatorLocation);
+            }
+
+            /* Recuperar ubicación del pasajero */
+            const passengerLocation = await getRedis<LocationPayload>(
+                `trip:${tripId}:passenger-location`
+            );
+
+            if (passengerLocation) {
+                socket.emit("passenger-location", passengerLocation);
             }
 
             socket.emit("joined-trip", {
                 tripId,
                 room,
             });
-
-            const latestPassengerLocation =
-                latestPassengerLocationsByTrip.get(String(tripId));
-
-            if (latestPassengerLocation) {
-                socket.emit("passenger-location", latestPassengerLocation);
-            }
         });
 
         socket.on("leave-trip", (tripId: string) => {
@@ -166,8 +174,8 @@ export function initializeSocket(server: HttpServer) {
             });
         });
 
-        /* UBICACION DEL OPERADOR y PASAJERO */
-        socket.on("passenger-location", (payload) => {
+        /* Ubicación del pasajero */
+        socket.on("passenger-location", async (payload) => {
             const tripId = String(payload?.tripId ?? "");
 
             const latitude = Number(payload?.location?.latitude);
@@ -180,7 +188,7 @@ export function initializeSocket(server: HttpServer) {
                 return;
             }
 
-            const data = {
+            const data: LocationPayload = {
                 tripId,
                 passengerId: user.sub,
                 location: {
@@ -190,14 +198,23 @@ export function initializeSocket(server: HttpServer) {
                 updatedAt: new Date().toISOString(),
             };
 
-            latestPassengerLocationsByTrip.set(tripId, data);
+            await setRedis(
+                `trip:${tripId}:passenger-location`,
+                data,
+                120
+            );
 
-
-            io.to(socketRooms.trip(tripId)).emit("passenger-location", data);
+            io.to(
+                socketRooms.trip(tripId)
+            ).emit(
+                "passenger-location",
+                data
+            );
         });
 
-        socket.on("operator-location", (payload) => {
-            if (user.type !== "driver") return;
+        /* Ubicación del operador */
+        socket.on("operator-location", async (payload) => {
+            if (user.type !== "driver" || !user.idoperador) return;
 
             const tripId = String(payload?.tripId ?? "");
 
@@ -208,20 +225,42 @@ export function initializeSocket(server: HttpServer) {
                 return;
             }
 
-            io.to(socketRooms.trip(tripId)).emit("operator-location", {
+            const data: LocationPayload = {
                 tripId,
                 operatorId: user.idoperador,
                 location: {
                     latitude,
                     longitude,
                 },
-                updatedAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+
+            /* Guardar ultima ubicación */
+            await setRedis(
+                `trip:${tripId}:operator-location`,
+                data,
+                120,
+            );
+
+            await saveOperatorLocation({
+                operatorId: user.idoperador,
+                latitude,
+                longitude
             });
+
+            io.to(socketRooms.trip(tripId)).emit("operator-location", data);
         });
 
-        socket.on("disconnect", () => {
-            console.log("Socket disconnected: ", socket.id);
-        });
+        socket.on(
+            "disconnect",
+            (reason) => {
+                console.log(
+                    "[Socket] disconnected",
+                    socket.id,
+                    reason
+                );
+            }
+        );
     });
 
     return io;
