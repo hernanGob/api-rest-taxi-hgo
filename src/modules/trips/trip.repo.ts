@@ -1,6 +1,7 @@
 import type { Pool } from "pg";
 import { generateUUID } from "../../utils/uuid.js";
 import type {
+    coords,
     CreateTripDto,
     ITripRepository,
     Trip,
@@ -9,59 +10,150 @@ import type {
     TripsForDashboard,
 } from "./trip.types.js";
 import type { OperatorTripHistoryRow } from "./tripHistoryOperator.mapper.js";
+import { calculateFare } from "./trip.pricing.js";
 
 export interface TripRow {
     id: string;
     passenger_id: string;
     idoperador: number | null;
+
     origin: TripPoint;
     destination: TripPoint;
     destination_address: string;
+
     distance_km: string;
     fare: string;
+    final_fare: string | null;
+
+    estimated_duration_minutes: number;
+    duration_minutes: number;
+
+    base_fare_applied: string;
+    per_minute_applied: string;
+    per_km_applied: string;
+    increase_percentage_applied: string;
+
     trip_status_id: number;
     service_type_id: number;
+
     requested_at: string | null;
+    accepted_at: string | null;
     started_at: string | null;
     completed_at: string | null;
-    duration_minutes: number;
+
+    pickup_code: string | null;
     pricing_config_id: string | null;
+
     passenger_rating: number | null;
     driver_rating: number | null;
+
     passenger_comment: string | null;
     driver_comment: string | null;
-    accepted_at: string | null;
-    pickup_code: string | null;
-    operator: {
+
+    route_to_destination_path: coords[] | null;
+
+    operator?: {
         idoperador: number;
         nombre: string;
         telefono: string;
-    } | null,
+    } | null;
 }
 
-const mapTrip = (row: TripRow): Trip => ({
-    id: row.id,
-    passengerId: row.passenger_id,
-    idOperador: row.idoperador,
-    origin: row.origin,
-    destination: row.destination,
-    destinationAddress: row.destination_address,
-    distanceKm: row.distance_km,
-    fare: row.fare,
-    tripStatusId: row.trip_status_id,
-    serviceTypeId: row.service_type_id,
-    requestedAt: row.requested_at,
-    startedAt: row.started_at,
-    completedAt: row.completed_at,
-    durationMinutes: row.duration_minutes,
-    pricingConfigId: row.pricing_config_id,
-    passengerRating: row.passenger_rating,
-    driverRating: row.driver_rating,
-    passengerComment: row.passenger_comment,
-    driverComment: row.driver_comment,
-    acceptedAt: row.accepted_at,
-    pickupCode: row.pickup_code,
-    operator: row.operator,
+export interface PricingSnapshotRow {
+    id: string;
+    base_fare: string;
+    per_minute: string;
+    per_km: string;
+}
+
+const mapTrip = (
+    row: TripRow
+): Trip => ({
+    id:
+        row.id,
+
+    passengerId:
+        row.passenger_id,
+
+    idOperador:
+        row.idoperador,
+
+    origin:
+        row.origin,
+
+    destination:
+        row.destination,
+
+    destinationAddress:
+        row.destination_address,
+
+    distanceKm:
+        row.distance_km,
+
+    fare:
+        row.fare,
+
+    finalFare:
+        row.final_fare,
+
+    estimatedDurationMinutes:
+        row.estimated_duration_minutes,
+
+    durationMinutes:
+        row.duration_minutes,
+
+    baseFareApplied:
+        row.base_fare_applied,
+
+    perMinuteApplied:
+        row.per_minute_applied,
+
+    perKmApplied:
+        row.per_km_applied,
+
+    increasePercentageApplied:
+        row.increase_percentage_applied,
+
+    tripStatusId:
+        row.trip_status_id,
+
+    serviceTypeId:
+        row.service_type_id,
+
+    requestedAt:
+        row.requested_at,
+
+    acceptedAt:
+        row.accepted_at,
+
+    startedAt:
+        row.started_at,
+
+    completedAt:
+        row.completed_at,
+
+    pickupCode:
+        row.pickup_code,
+
+    pricingConfigId:
+        row.pricing_config_id,
+
+    passengerRating:
+        row.passenger_rating,
+
+    driverRating:
+        row.driver_rating,
+
+    passengerComment:
+        row.passenger_comment,
+
+    driverComment:
+        row.driver_comment,
+
+    destinationRoutePath: row.route_to_destination_path ?? [],
+
+    operator:
+        row.operator ?? null,
 });
 
 export class TripRepository implements ITripRepository {
@@ -70,65 +162,96 @@ export class TripRepository implements ITripRepository {
     async createTrip(data: CreateTripDto): Promise<TripCreated | null> {
         const result = await this.db.query(
             `
-      INSERT INTO public.trips
-        (
-          id,
-          passenger_id,
-          origin,
-          destination,
-          destination_address,
-          distance_km,
-          fare,
-          service_type_id,
-          pricing_config_id,
-          route_to_destination_path
-        )
-      VALUES
-        ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-      RETURNING *;
-      `,
+            INSERT INTO public.trips
+            (
+                id,
+                passenger_id,
+                origin,
+                destination,
+                destination_address,
+                distance_km,
+                fare,
+                estimated_duration_minutes,
+                base_fare_applied,
+                per_minute_applied,
+                per_km_applied,
+                increase_percentage_applied,
+                service_type_id,
+                pricing_config_id,
+                route_to_destination_path
+            )
+            VALUES
+            (
+                $1, $2, $3, $4, $5,
+                $6, $7, $8, $9, $10,
+                $11, $12, $13, $14, $15
+            )
+            RETURNING *;
+            `,
             [
                 generateUUID(),
+
                 data.passengerId,
+
                 JSON.stringify(data.origin),
+
                 JSON.stringify(data.destination),
+
                 data.destinationAddress,
+
                 data.distanceKm,
+
                 data.fare,
+
+                data.estimatedDurationMinutes,
+
+                data.baseFareApplied,
+
+                data.perMinuteApplied,
+
+                data.perKmApplied,
+
+                data.increasePercentageApplied,
+
                 data.serviceTypeId,
-                data.pricingConfigId ?? null,
+
+                data.pricingConfigId,
+
                 JSON.stringify(data.destinationRoutePath),
             ]
         );
 
-        const row = result.rows[0];
+        const row =
+            result.rows[0];
 
-        return row ? {
-            id: row.id,
-            passengerId: row.passenger_id,
-            idOperador: row.idoperador,
-            origin: row.origin,
-            destination: row.destination,
-            destinationAddress: row.destination_address,
-            distanceKm: row.distance_km,
-            fare: row.fare,
-            tripStatusId: row.trip_status_id,
-            serviceTypeId: row.service_type_id,
-            requestedAt: row.requested_at,
-            startedAt: row.started_at,
-            completedAt: row.completed_at,
-            durationMinutes: row.duration_minutes,
-            pricingConfigId: row.pricing_config_id,
-            passengerRating: row.passenger_rating,
-            driverRating: row.driver_rating,
-            passengerComment: row.passenger_comment,
-            driverComment: row.driver_comment,
-            acceptedAt: row.accepted_at,
-            pickupCode: row.pickup_code,
-            operator: row.operator,
-            destinationRoutePath: row.route_to_destination_path,
-        } : null;
+        return row
+            ? mapTrip(row)
+            : null;
+    }
 
+    async findPricingConfigById(
+        pricingConfigId: string
+    ): Promise<PricingSnapshotRow | null> {
+        const result =
+            await this.db.query<PricingSnapshotRow>(
+                `
+            SELECT
+                id,
+                base_fare,
+                per_minute,
+                per_km
+            FROM public.pricing_config
+            WHERE id = $1
+              AND is_active = true
+            LIMIT 1;
+            `,
+                [
+                    pricingConfigId,
+                ]
+            );
+
+        return result.rows[0] ??
+            null;
     }
 
     async findTripById(id: string): Promise<Trip | null> {
@@ -249,26 +372,145 @@ export class TripRepository implements ITripRepository {
         tripId: string;
         idoperador: number;
     }): Promise<Trip | null> {
-        const result = await this.db.query<TripRow>(
-            `
-    UPDATE public.trips
-    SET 
-      trip_status_id = 4,
-      completed_at = now(),
-      duration_minutes = GREATEST(
-        1,
-        CEIL(EXTRACT(EPOCH FROM (now() - started_at)) / 60)::int
-      )
-    WHERE id = $1
-      AND idoperador = $2
-      AND trip_status_id = 3
-    RETURNING *;
-    `,
-            [data.tripId, data.idoperador]
-        );
+        const client =
+            await this.db.connect();
 
-        const row = result.rows[0];
-        return row ? mapTrip(row) : null;
+        try {
+            await client.query(
+                "BEGIN"
+            );
+
+            const currentResult =
+                await client.query(
+                    `
+                SELECT
+                    t.*,
+
+                    GREATEST(
+                        1,
+                        CEIL(
+                            EXTRACT(
+                                EPOCH FROM (
+                                    NOW() -
+                                    t.started_at
+                                )
+                            ) / 60
+                        )::INTEGER
+                    ) AS final_duration_minutes
+
+                FROM public.trips t
+
+                WHERE t.id = $1
+                  AND t.idoperador = $2
+                  AND t.trip_status_id = 3
+                  AND t.started_at IS NOT NULL
+
+                FOR UPDATE;
+                `,
+                    [
+                        data.tripId,
+                        data.idoperador,
+                    ]
+                );
+
+            const currentTrip =
+                currentResult.rows[0];
+
+            if (!currentTrip) {
+                await client.query(
+                    "ROLLBACK"
+                );
+
+                return null;
+            }
+
+            const finalDurationMinutes =
+                Number(
+                    currentTrip
+                        .final_duration_minutes
+                );
+
+            const finalFare =
+                calculateFare({
+                    pricing: {
+                        baseFare:
+                            currentTrip
+                                .base_fare_applied,
+
+                        perMinute:
+                            currentTrip
+                                .per_minute_applied,
+
+                        perKm:
+                            currentTrip
+                                .per_km_applied,
+                    },
+
+                    distanceKm:
+                        Number(
+                            currentTrip
+                                .distance_km
+                        ),
+
+                    durationMin:
+                        finalDurationMinutes,
+
+                    increasePercentage:
+                        Number(
+                            currentTrip
+                                .increase_percentage_applied
+                        ),
+                });
+
+            const updateResult =
+                await client.query<TripRow>(
+                    `
+                UPDATE public.trips
+                SET
+                    trip_status_id = 4,
+                    completed_at = NOW(),
+                    duration_minutes = $3,
+                    final_fare = $4
+                WHERE id = $1
+                  AND idoperador = $2
+                  AND trip_status_id = 3
+                RETURNING *;
+                `,
+                    [
+                        data.tripId,
+                        data.idoperador,
+                        finalDurationMinutes,
+                        finalFare,
+                    ]
+                );
+
+            const completedTrip =
+                updateResult.rows[0];
+
+            if (!completedTrip) {
+                await client.query(
+                    "ROLLBACK"
+                );
+
+                return null;
+            }
+
+            await client.query(
+                "COMMIT"
+            );
+
+            return mapTrip(
+                completedTrip
+            );
+        } catch (error) {
+            await client.query(
+                "ROLLBACK"
+            );
+
+            throw error;
+        } finally {
+            client.release();
+        }
     }
 
     async rateTrip(data: { tripId: string; rating: 1 | 2 | 3; comment: string }): Promise<Trip | null> {

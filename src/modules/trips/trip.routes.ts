@@ -31,6 +31,7 @@ export const TripRoutes = (tripController: TripController) => {
 
     router.patch(
         "/:id/complete",
+        authenticateOperador,
         tripController.completeTrip.bind(tripController)
     );
 

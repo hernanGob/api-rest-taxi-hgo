@@ -135,7 +135,6 @@ export async function initializeSocket(server: HttpServer) {
                 });
             }
 
-
             const room = socketRooms.trip(tripId);
             socket.join(room);
 
@@ -213,8 +212,10 @@ export async function initializeSocket(server: HttpServer) {
         });
 
         /* Ubicación del operador */
-        socket.on("operator-location", async (payload) => {
+        /* socket.on("operator-location", async (payload) => {
             if (user.type !== "driver" || !user.idoperador) return;
+
+            
 
             const tripId = String(payload?.tripId ?? "");
 
@@ -235,7 +236,7 @@ export async function initializeSocket(server: HttpServer) {
                 updatedAt: new Date().toISOString()
             };
 
-            /* Guardar ultima ubicación */
+            // Guardar ultima ubicación
             await setRedis(
                 `trip:${tripId}:operator-location`,
                 data,
@@ -249,7 +250,100 @@ export async function initializeSocket(server: HttpServer) {
             });
 
             io.to(socketRooms.trip(tripId)).emit("operator-location", data);
+        }); */
+        socket.on("operator-location", async (payload) => {
+            const operatorId = Number(user.idoperador);
+            if (
+                user.type !== "driver" ||
+                !Number.isInteger(operatorId)
+            ) {
+                return;
+            }
+
+            const latitude = Number(
+                payload?.location?.latitude
+            );
+
+            const longitude = Number(
+                payload?.location?.longitude
+            );
+
+            if (
+                !Number.isFinite(latitude) ||
+                !Number.isFinite(longitude) ||
+                latitude < -90 ||
+                latitude > 90 ||
+                longitude < -180 ||
+                longitude > 180
+            ) {
+                socket.emit("socket-error", {
+                    message: "Ubicación de operador inválida",
+                });
+
+                return;
+            }
+
+            /*
+             * Guardar siempre la ubicación general.
+             * Esta ubicación se utiliza para buscar
+             * operadores cercanos antes de aceptar un viaje.
+             */
+            await saveOperatorLocation({
+                operatorId,
+                latitude,
+                longitude,
+            });
+
+            /*
+             * Si todavía no tiene viaje, terminamos aquí.
+             * Su ubicación general ya quedó almacenada.
+             */
+            const tripId = payload?.tripId
+                ? String(payload.tripId)
+                : null;
+
+            if (!tripId) {
+                socket.emit(
+                    "operator-location-saved",
+                    {
+                        operatorId,
+                        latitude,
+                        longitude,
+                    }
+                );
+
+                return;
+            }
+
+            /*
+             * Si ya tiene viaje, también guardar
+             * la ubicación específica del viaje.
+             */
+            const data: LocationPayload = {
+                tripId,
+                operatorId,
+                location: {
+                    latitude,
+                    longitude,
+                },
+                updatedAt: new Date().toISOString(),
+            };
+
+            await setRedis(
+                `trip:${tripId}:operator-location`,
+                data,
+                120
+            );
+
+            io.to(
+                socketRooms.trip(tripId)
+            ).emit(
+                "operator-location",
+                data
+            );
         });
+
+
 
         socket.on(
             "disconnect",

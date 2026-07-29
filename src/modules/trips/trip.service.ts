@@ -6,6 +6,7 @@ import { GeoService } from "../geo/geo.service.js";
 import { mapOperatorTripHistoryForApp } from "./tripHistoryOperator.mapper.js";
 import { emitToAvailableTrips, emitToOperator, emitToTrip } from "../../socket/socket.service.js";
 import { findNearbyOperators } from "../location/location.service.js";
+import { calculateFare, getServiceIncreasePercentage } from "./trip.pricing.js";
 
 export class TripService {
     constructor(
@@ -17,28 +18,129 @@ export class TripService {
         return String(Math.floor(10000 + Math.random() * 90000));
     }
 
-    async createTrip(data: any) {
+    async createTrip(data: {
+        passengerId: string;
 
-        const routeInfo =
-            await this.geoService.getRouteInfo({
-                originLat: data.origin.lat,
-                originLng: data.origin.lng,
-                destLat: data.destination.lat,
-                destLng: data.destination.lng,
-            });
-
-
-        const dataNewTrip = {
-            ...data,
-            destinationRoutePath: routeInfo.path,
+        origin: {
+            lat: number;
+            lng: number;
+            address?: string;
         };
 
+        destination: {
+            lat: number;
+            lng: number;
+            address?: string;
+        };
 
-        const result =
-            await this.tripRepository.createTrip(
-                dataNewTrip
+        destinationAddress: string;
+
+        serviceTypeId: number;
+        pricingConfigId: string;
+    }) {
+        const routeInfo =
+            await this.geoService.getRouteInfo({
+                originLat:
+                    data.origin.lat,
+
+                originLng:
+                    data.origin.lng,
+
+                destLat:
+                    data.destination.lat,
+
+                destLng:
+                    data.destination.lng,
+            });
+
+        const pricing =
+            await this.tripRepository
+                .findPricingConfigById(
+                    data.pricingConfigId
+                );
+
+        if (!pricing) {
+            throw new Error(
+                "No existe una configuración tarifaria activa"
+            );
+        }
+
+        const increasePercentage =
+            getServiceIncreasePercentage(
+                data.serviceTypeId
             );
 
+        const estimatedDurationMinutes =
+            Math.max(
+                1,
+                Math.ceil(
+                    routeInfo.durationMin
+                )
+            );
+
+        const distanceKm =
+            Number(
+                routeInfo.distanceKm
+            );
+
+        const calculatedFare =
+            calculateFare({
+                pricing: {
+                    baseFare:
+                        pricing.base_fare,
+
+                    perMinute:
+                        pricing.per_minute,
+
+                    perKm:
+                        pricing.per_km,
+                },
+
+                distanceKm,
+
+                durationMin:
+                    estimatedDurationMinutes,
+
+                increasePercentage,
+            });
+
+        const dataNewTrip: CreateTripDto = {
+            ...data,
+
+            distanceKm,
+
+            estimatedDurationMinutes,
+
+            fare:
+                calculatedFare,
+
+            baseFareApplied:
+                Number(
+                    pricing.base_fare
+                ),
+
+            perMinuteApplied:
+                Number(
+                    pricing.per_minute
+                ),
+
+            perKmApplied:
+                Number(
+                    pricing.per_km
+                ),
+
+            increasePercentageApplied:
+                increasePercentage,
+
+            destinationRoutePath:
+                routeInfo.path,
+        };
+
+        const result =
+            await this.tripRepository
+                .createTrip(
+                    dataNewTrip
+                );
 
         if (!result) {
             throw new Error(
@@ -47,8 +149,8 @@ export class TripService {
         }
 
         const tripPayload = {
-
-            id: result.id,
+            id:
+                result.id,
 
             passengerId:
                 result.passengerId,
@@ -56,62 +158,36 @@ export class TripService {
             idOperador:
                 result.idOperador,
 
-
             origin:
                 result.origin,
 
             destination:
                 result.destination,
 
-
             destinationAddress:
                 result.destinationAddress,
-
 
             distanceKm:
                 result.distanceKm,
 
-
             fare:
                 result.fare,
 
+            estimatedDurationMinutes: result.estimatedDurationMinutes,
 
             tripStatusId:
                 result.tripStatusId,
 
-
             serviceTypeId:
                 result.serviceTypeId,
-
 
             requestedAt:
                 result.requestedAt,
 
-
-            acceptedAt:
-                result.acceptedAt,
-
-
-            startedAt:
-                result.startedAt,
-
-
-            completedAt:
-                result.completedAt,
-
-
-            pickupCode:
-                result.pickupCode,
-
-
             routeToDestinationPath:
                 result.destinationRoutePath,
-
         };
 
-        /**
-         * Buscar operadores cercanos
-         */
         const nearbyDrivers =
             await findNearbyOperators(
                 data.origin.lat,
@@ -119,26 +195,15 @@ export class TripService {
                 2
             );
 
-        console.log(
-            "Operadores cercanos:",
-            nearbyDrivers
-        );
-
-        /**
-         * Enviar solamente a operadores cercanos
-         */
         for (
             const operatorId of nearbyDrivers
         ) {
-
             emitToOperator(
                 Number(operatorId),
                 "new-trip",
                 tripPayload
             );
-
         }
-
 
         return result;
     }
@@ -235,34 +300,182 @@ export class TripService {
         pickupCode: string;
     }) {
         if (!validator.isUUID(data.tripId)) {
-            throw new Error("El id del viaje no es válido");
+            throw new Error(
+                "El id del viaje no es válido"
+            );
         }
 
-        if (!data.pickupCode || !/^\d{5}$/.test(data.pickupCode)) {
-            throw new Error("El código debe ser de 5 dígitos");
+        if (
+            !data.pickupCode ||
+            !/^\d{5}$/.test(data.pickupCode)
+        ) {
+            throw new Error(
+                "El código debe ser de 5 dígitos"
+            );
         }
 
-        const result = await this.tripRepository.startTrip(data);
+        const result =
+            await this.tripRepository.startTrip(
+                data
+            );
 
         if (!result) {
-            throw new Error("Código incorrecto o viaje no disponible");
+            throw new Error(
+                "Código incorrecto o viaje no disponible"
+            );
         }
+
+        const payload = {
+            id: result.id,
+            passengerId:
+                result.passengerId,
+            idOperador:
+                result.idOperador,
+            tripStatusId:
+                result.tripStatusId,
+            startedAt:
+                result.startedAt,
+            origin:
+                result.origin,
+            destination:
+                result.destination,
+            destinationAddress:
+                result.destinationAddress,
+            routeToDestinationPath:
+                result.destinationRoutePath,
+        };
+
+        emitToTrip(
+            result.id,
+            "trip-started",
+            payload
+        );
 
         return result;
     }
 
-    async completeTrip(data: { tripId: string; idoperador: number }) {
-        if (!validator.isUUID(data.tripId)) {
-            throw new Error("El id del viaje no es válido");
+    async completeTrip(data: {
+        tripId: string;
+        idoperador: number;
+    }) {
+        if (
+            !validator.isUUID(
+                data.tripId
+            )
+        ) {
+            throw new Error(
+                "El id del viaje no es válido"
+            );
         }
 
-        const result = await this.tripRepository.completeTrip(data);
+        if (
+            !Number.isInteger(
+                data.idoperador
+            ) ||
+            data.idoperador <= 0
+        ) {
+            throw new Error(
+                "El operador no es válido"
+            );
+        }
+
+        const result =
+            await this.tripRepository
+                .completeTrip(
+                    data
+                );
 
         if (!result) {
-            throw new Error("No se pudo completar el viaje");
+            throw new Error(
+                "No se pudo completar el viaje"
+            );
         }
 
-        return result;
+        if (!result.finalFare) {
+            throw new Error(
+                "No se pudo obtener la tarifa final"
+            );
+        }
+
+        const estimatedFare =
+            Number(result.fare);
+
+        const finalFare =
+            Number(result.finalFare);
+
+        const payload = {
+            id:
+                result.id,
+
+            passengerId:
+                result.passengerId,
+
+            idOperador:
+                result.idOperador,
+
+            tripStatusId:
+                result.tripStatusId,
+
+            destination:
+                result.destination,
+
+            destinationAddress:
+                result.destinationAddress,
+
+            distanceKm:
+                result.distanceKm,
+
+            estimatedDurationMinutes:
+                result
+                    .estimatedDurationMinutes,
+
+            durationMinutes:
+                result.durationMinutes,
+
+            estimatedFare:
+                result.fare,
+
+            finalFare:
+                result.finalFare,
+
+            fareDifference:
+                (
+                    finalFare -
+                    estimatedFare
+                ).toFixed(2),
+
+            startedAt:
+                result.startedAt,
+
+            completedAt:
+                result.completedAt,
+
+            payment: {
+                amount:
+                    result.finalFare,
+
+                currency:
+                    "MXN" as const,
+
+                status:
+                    "pending" as const,
+
+                instructions:
+                    "Revisa el total y realiza el pago al operador.",
+            },
+        };
+
+        emitToTrip(
+            result.id,
+            "trip-completed",
+            payload
+        );
+
+        return {
+            ...result,
+            payment:
+                payload.payment,
+        };
     }
 
     async rateTrip(data: { tripId: string; rating: 1 | 2 | 3; comment: string }) {

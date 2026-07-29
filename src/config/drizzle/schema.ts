@@ -14,6 +14,7 @@ import {
     serial,
     date,
 } from "drizzle-orm/pg-core";
+import type { coords } from "../../modules/trips/trip.types.js";
 
 export const supportConversationStatusEnum = pgEnum(
     "support_conversation_status",
@@ -232,22 +233,104 @@ type RoutePoint = {
 export const trips = pgTable(
     "trips",
     {
-        id: uuid("id").primaryKey().notNull(),
+        id: uuid("id")
+            .primaryKey()
+            .notNull(),
 
         passengerId: uuid("passenger_id")
             .notNull()
-            .references(() => passenger.id, { onDelete: "cascade" }),
+            .references(() => passenger.id, {
+                onDelete: "cascade",
+            }),
 
-        idOperador: integer('idoperador'),
+        idOperador: integer("idoperador"),
 
         origin: jsonb("origin").notNull(),
-        destination: jsonb("destination").notNull(),
 
-        destinationAddress: text("destination_address").notNull(),
+        destination:
+            jsonb("destination").notNull(),
 
-        distanceKm: numeric("distance_km", { precision: 10, scale: 2 }).notNull(),
-        fare: numeric("fare", { precision: 10, scale: 2 }).notNull(),
-        routeToDestinationPath: jsonb('route_to_destination_path').$type<RoutePoint[]>(),
+        destinationAddress:
+            text("destination_address").notNull(),
+
+        distanceKm: numeric("distance_km", {
+            precision: 10,
+            scale: 2,
+        }).notNull(),
+
+        /*
+         * Tarifa estimada.
+         */
+        fare: numeric("fare", {
+            precision: 10,
+            scale: 2,
+        }).notNull(),
+
+        /*
+         * Tarifa definitiva.
+         */
+        finalFare: numeric("final_fare", {
+            precision: 10,
+            scale: 2,
+        }),
+
+        /*
+         * Duración calculada originalmente
+         * por el servicio de rutas.
+         */
+        estimatedDurationMinutes: integer(
+            "estimated_duration_minutes"
+        )
+            .notNull()
+            .default(0),
+
+        /*
+         * Valores tarifarios aplicados al momento
+         * de solicitar el viaje.
+         */
+        baseFareApplied: numeric(
+            "base_fare_applied",
+            {
+                precision: 10,
+                scale: 2,
+            }
+        )
+            .notNull()
+            .default("0"),
+
+        perMinuteApplied: numeric(
+            "per_minute_applied",
+            {
+                precision: 10,
+                scale: 2,
+            }
+        )
+            .notNull()
+            .default("0"),
+
+        perKmApplied: numeric(
+            "per_km_applied",
+            {
+                precision: 10,
+                scale: 2,
+            }
+        )
+            .notNull()
+            .default("0"),
+
+        increasePercentageApplied: numeric(
+            "increase_percentage_applied",
+            {
+                precision: 5,
+                scale: 2,
+            }
+        )
+            .notNull()
+            .default("0"),
+
+        routeToDestinationPath:
+            jsonb("route_to_destination_path")
+                .$type<coords[]>(),
 
         tripStatusId: integer("trip_status_id")
             .notNull()
@@ -258,36 +341,65 @@ export const trips = pgTable(
             .notNull()
             .references(() => serviceType.id),
 
-        // opcional: si decides tarifa por municipio/zona del ORIGEN o DESTINO
-        // originMunicipalityId: uuid("origin_municipality_id").references(() => municipality.id, { onDelete: "set null" }),
-        // destinationMunicipalityId: uuid("destination_municipality_id").references(() => municipality.id, { onDelete: "set null" }),
+        requestedAt: timestamp("requested_at", {
+            withTimezone: false,
+        }).defaultNow(),
 
-        requestedAt: timestamp("requested_at", { withTimezone: false }).defaultNow(),
-        startedAt: timestamp("started_at", { withTimezone: false }),
-        completedAt: timestamp("completed_at", { withTimezone: false }),
-
-        durationMinutes: integer("duration_minutes").notNull().default(0),
-
-        pricingConfigId: uuid("pricing_config_id").references(() => pricingConfig.id, {
-            onDelete: "set null",
+        startedAt: timestamp("started_at", {
+            withTimezone: false,
         }),
 
-        passengerRating: integer("passenger_rating"),
-        driverRating: integer("driver_rating"),
+        completedAt: timestamp("completed_at", {
+            withTimezone: false,
+        }),
 
-        passengerComment: text("passenger_comment"),
-        driverComment: text("driver_comment"),
+        durationMinutes: integer("duration_minutes")
+            .notNull()
+            .default(0),
 
-        pickupCode: varchar("pickup_code", { length: 5 }),
-        acceptedAt: timestamp("accepted_at", { withTimezone: false }),
-        cancelled_at: timestamp("cancelled_at", { withTimezone: false }),
+        pricingConfigId: uuid("pricing_config_id")
+            .references(() => pricingConfig.id, {
+                onDelete: "set null",
+            }),
+
+        passengerRating:
+            integer("passenger_rating"),
+
+        driverRating:
+            integer("driver_rating"),
+
+        passengerComment:
+            text("passenger_comment"),
+
+        driverComment:
+            text("driver_comment"),
+
+        pickupCode: varchar("pickup_code", {
+            length: 5,
+        }),
+
+        acceptedAt: timestamp("accepted_at", {
+            withTimezone: false,
+        }),
+
+        cancelledAt: timestamp("cancelled_at", {
+            withTimezone: false,
+        }),
     },
     (t) => [
-        index("trips_passenger_id_idx").on(t.passengerId),
-        index("trips_status_id_idx").on(t.tripStatusId),
-        index("trips_service_type_id_idx").on(t.serviceTypeId),
-        index("trips_pricing_config_id_idx").on(t.pricingConfigId),
-    ],
+        index("trips_passenger_id_idx").on(
+            t.passengerId
+        ),
+        index("trips_status_id_idx").on(
+            t.tripStatusId
+        ),
+        index("trips_service_type_id_idx").on(
+            t.serviceTypeId
+        ),
+        index("trips_pricing_config_id_idx").on(
+            t.pricingConfigId
+        ),
+    ]
 );
 
 /* ===================== DRIVERS ===================== */

@@ -10,24 +10,50 @@ export interface Trip {
     id: string;
     passengerId: string;
     idOperador: number | null;
+
     origin: TripPoint;
     destination: TripPoint;
     destinationAddress: string;
+
     distanceKm: string;
+
+    /*
+     * Estimada.
+     */
     fare: string;
+
+    /*
+     * Definitiva.
+     */
+    finalFare: string | null;
+
+    estimatedDurationMinutes: number;
+    durationMinutes: number;
+
+    baseFareApplied: string;
+    perMinuteApplied: string;
+    perKmApplied: string;
+    increasePercentageApplied: string;
+
     tripStatusId: number;
     serviceTypeId: number;
+
     requestedAt: string | null;
     acceptedAt: string | null;
     startedAt: string | null;
     completedAt: string | null;
+
     pickupCode: string | null;
-    durationMinutes: number;
     pricingConfigId: string | null;
+
     passengerRating: number | null;
     driverRating: number | null;
+
     passengerComment: string | null;
     driverComment: string | null;
+
+    destinationRoutePath:coords[];
+
     operator: {
         idoperador: number;
         nombre: string;
@@ -56,6 +82,7 @@ export interface TripCreated {
     passengerRating: number | null;
     driverRating: number | null;
     passengerComment: string | null;
+    estimatedDurationMinutes: number;
     driverComment: string | null;
     operator: {
         idoperador: number;
@@ -72,38 +99,72 @@ export type coords = {
 
 export interface CreateTripDto {
     passengerId: string;
+
     origin: TripPoint;
     destination: TripPoint;
     destinationAddress: string;
+
     distanceKm: number;
+    estimatedDurationMinutes: number;
     fare: number;
+
     serviceTypeId: number;
-    pricingConfigId?: string | null;
-    destinationRoutePath: coords[]
+    pricingConfigId: string;
+
+    baseFareApplied: number;
+    perMinuteApplied: number;
+    perKmApplied: number;
+    increasePercentageApplied: number;
+
+    destinationRoutePath: coords[];
 }
 
 export interface TripRow {
     id: string;
     passenger_id: string;
     idoperador: number | null;
-    origin: TripPoint;              // JSONB en DB
-    destination: TripPoint;         // JSONB en DB
+
+    origin: TripPoint;
+    destination: TripPoint;
     destination_address: string;
-    distance_km: string;            // numeric(10,2) en DB -> string
-    fare: string;                   // numeric(10,2) en DB -> string
+
+    distance_km: string;
+    fare: string;
+    final_fare: string | null;
+
+    estimated_duration_minutes: number;
+    duration_minutes: number;
+
+    base_fare_applied: string;
+    per_minute_applied: string;
+    per_km_applied: string;
+    increase_percentage_applied: string;
+
     trip_status_id: number;
     service_type_id: number;
+
     requested_at: string | null;
     accepted_at: string | null;
     started_at: string | null;
     completed_at: string | null;
+
     pickup_code: string | null;
-    duration_minutes: number;
     pricing_config_id: string | null;
+
     passenger_rating: number | null;
     driver_rating: number | null;
+
     passenger_comment: string | null;
     driver_comment: string | null;
+
+    route_to_destination_path:
+    coords[] | null;
+
+    operator?: {
+        idoperador: number;
+        nombre: string;
+        telefono: string;
+    } | null;
 }
 
 export interface TripForApp {

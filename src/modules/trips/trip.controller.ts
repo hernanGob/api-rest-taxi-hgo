@@ -23,20 +23,41 @@ export class TripController {
 
             const data = {
                 passengerId: String(body.passengerId),
+
                 origin: {
-                    lat: Number(body.origin.lat),
-                    lng: Number(body.origin.lng),
-                    address: body.origin.address,
+                    lat:
+                        Number(body.origin.lat),
+                    lng:
+                        Number(body.origin.lng),
+                    address:
+                        body.origin.address,
                 },
+
                 destination: {
-                    lat: Number(body.destination.lat),
-                    lng: Number(body.destination.lng),
-                    address: body.destination.address,
+                    lat:
+                        Number(body.destination.lat),
+                    lng:
+                        Number(body.destination.lng),
+                    address:
+                        body.destination.address,
                 },
+
                 destinationAddress: body.destinationAddress.trim(),
+
                 distanceKm: Number(body.distanceKm),
+
                 fare: Number(body.fare),
+
+                estimatedDurationMinutes: Math.max(
+                    1,
+                    Math.ceil(
+                        Number(
+                            body.estimatedDurationMinutes
+                        )
+                    )
+                ),
                 serviceTypeId: Number(body.serviceTypeId),
+
                 pricingConfigId: body.pricingConfigId ?? null,
             };
 
@@ -163,18 +184,55 @@ export class TripController {
         }
     }
 
-    async completeTrip(req: Request, res: Response, next: NextFunction) {
+    async completeTrip(
+        req: Request,
+        res: Response,
+        next: NextFunction
+    ) {
         try {
-            const result = await this.tripService.completeTrip({
-                tripId: req.params.id as string,
-                idoperador: Number(req.body.idoperador),
-            });
+            const idoperador =
+                Number(
+                    req.user?.idoperador
+                );
 
-            return res.status(200).json({
-                status: "success",
-                msg: "Viaje completado correctamente",
-                data: result,
-            });
+            if (
+                !Number.isInteger(
+                    idoperador
+                ) ||
+                idoperador <= 0
+            ) {
+                return res
+                    .status(401)
+                    .json({
+                        status:
+                            "error",
+
+                        msg:
+                            "No se pudo identificar al operador",
+                    });
+            }
+
+            const result =
+                await this.tripService
+                    .completeTrip({
+                        tripId:
+                            req.params.id as string,
+
+                        idoperador,
+                    });
+
+            return res
+                .status(200)
+                .json({
+                    status:
+                        "success",
+
+                    msg:
+                        "Viaje completado correctamente",
+
+                    data:
+                        result,
+                });
         } catch (error) {
             next(error);
         }
