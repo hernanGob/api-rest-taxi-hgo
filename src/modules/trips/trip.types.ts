@@ -52,7 +52,7 @@ export interface Trip {
     passengerComment: string | null;
     driverComment: string | null;
 
-    destinationRoutePath:coords[];
+    destinationRoutePath: coords[];
 
     operator: {
         idoperador: number;

@@ -192,7 +192,7 @@ export class TripService {
             await findNearbyOperators(
                 data.origin.lat,
                 data.origin.lng,
-                2
+                3
             );
 
         for (
@@ -354,7 +354,7 @@ export class TripService {
         return result;
     }
 
-    async completeTrip(data: {
+    /* async completeTrip(data: {
         tripId: string;
         idoperador: number;
     }) {
@@ -476,6 +476,136 @@ export class TripService {
             payment:
                 payload.payment,
         };
+    } */
+
+    async completeTrip(data: {
+        tripId: string;
+        idoperador: number;
+    }) {
+        if (!validator.isUUID(data.tripId)) {
+            throw new Error(
+                "El id del viaje no es válido"
+            );
+        }
+
+        if (
+            !Number.isInteger(data.idoperador) ||
+            data.idoperador <= 0
+        ) {
+            throw new Error(
+                "El operador no es válido"
+            );
+        }
+
+        const result =
+            await this.tripRepository
+                .completeTrip(data);
+
+        if (!result) {
+            throw new Error(
+                "No se pudo completar el viaje"
+            );
+        }
+
+        /*
+         * No uses:
+         *
+         * if (!result.finalFare)
+         *
+         * porque 0 también se considera false.
+         */
+        if (
+            result.finalFare === null ||
+            result.finalFare === undefined
+        ) {
+            throw new Error(
+                "No se pudo obtener la tarifa final"
+            );
+        }
+
+        const estimatedFare =
+            Number(result.fare);
+
+        const finalFare =
+            Number(result.finalFare);
+
+        const fareDifference =
+            Number(
+                (
+                    finalFare -
+                    estimatedFare
+                ).toFixed(2)
+            );
+
+        const payload = {
+            id:
+                result.id,
+
+            passengerId:
+                result.passengerId,
+
+            idOperador:
+                result.idOperador,
+
+            tripStatusId:
+                result.tripStatusId,
+
+            destination:
+                result.destination,
+
+            destinationAddress:
+                result.destinationAddress,
+
+            distanceKm:
+                Number(result.distanceKm),
+
+            estimatedDurationMinutes:
+                result.estimatedDurationMinutes,
+
+            durationMinutes:
+                result.durationMinutes,
+
+            estimatedFare,
+
+            finalFare,
+
+            fareDifference,
+
+            startedAt:
+                result.startedAt,
+
+            completedAt:
+                result.completedAt,
+
+            payment: {
+                amount:
+                    finalFare,
+
+                currency:
+                    "MXN" as const,
+
+                status:
+                    "pending" as const,
+
+                instructions:
+                    "Revisa el total y realiza el pago al operador.",
+            },
+        };
+
+        /*
+         * El pasajero recibe el evento por Socket.IO.
+         */
+        emitToTrip(
+            result.id,
+            "trip-completed",
+            payload
+        );
+
+        /*
+         * El operador recibe exactamente el mismo
+         * resumen como respuesta HTTP.
+         */
+        return payload;
     }
 
     async rateTrip(data: { tripId: string; rating: 1 | 2 | 3; comment: string }) {
