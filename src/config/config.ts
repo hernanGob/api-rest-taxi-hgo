@@ -14,6 +14,9 @@ interface Config {
     STCH_USER: string;
     STCH_PASSWORD: string;
     CLIENT_URL: string;
+    REDIS_PASSWORD: string;
+    REDIS_HOST: string;
+    REDIS_PORT: number;
 }
 
 export const config: Config = {
@@ -28,4 +31,7 @@ export const config: Config = {
     STCH_USER: process.env.STCH_USER || '',
     STCH_PASSWORD: process.env.STCH_PASSWORD || '',
     CLIENT_URL: process.env.CLIENT_URL || '*',
+    REDIS_PASSWORD: process.env.REDIS_PASSWORD || '',
+    REDIS_HOST: process.env.REDIS_HOST || '',
+    REDIS_PORT: Number(process.env.REDIS_PORT) || 6379,
 };
